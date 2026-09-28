@@ -207,7 +207,11 @@ class Live {
   timeAt(p) { return this.sm ? this.sm.t + (p - this.sm.p) / 1000 : this.raw(p); }
 
   pause() { if (!this.running || this.paused || this.finished) return; this.paused = true; this.ac.suspend(); }
-  resume() { if (!this.paused) return; this.paused = false; this.sm = null; this.ac.resume(); }
+  resume() {
+    if (!this.paused) return;
+    this.paused = false; this.sm = null; this.ac.resume();
+    for (const h of this.holding) if (h && !this.down[h.lane]) this.holdEnd(h, false);   // released while paused
+  }
   stop() {
     this.running = false;
     try { this.srcs.forEach(s => { try { s.stop(); } catch (e) {} }); } catch (e) {}
@@ -236,9 +240,10 @@ class Live {
   release(lane, p) {
     this.down[lane] = false;
     const h = this.holding[lane];
-    if (!h || !this.running) return;
+    if (!h || !this.running || this.paused) return;            // let go during pause: settled on resume
     const t = this.timeAt(p);
-    if (t < h.end - .12) this.holdEnd(h, false); else this.holdEnd(h, true);
+    const grace = Math.max(.15, Math.min(.35, (h.end - h.t) * .2));   // the last 20% of a hold may be released early
+    this.holdEnd(h, t >= h.end - grace);
   }
   holdEnd(h, ok) {
     this.holding[h.lane] = null;
@@ -272,6 +277,7 @@ class Live {
       this.sync += ((k === 0 ? 100 : k === 1 ? 75 : 40) - this.sync) * .012;
       if (this.combo % 50 === 0) { this.on('milestone', { combo: this.combo }); this.cheer(.45); }
     } else {
+      if (n.len) n.hold = 'drop';                                  // a missed head still shows its tail, greyed
       if (this.combo >= 20) this.on('break', { combo: this.combo });
       this.combo = 0;
       this.partGain(.06, n); this.thunk();

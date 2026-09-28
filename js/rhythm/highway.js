@@ -6,10 +6,10 @@
 'use strict';
 
 const THEME = {
-  GT: { name: 'FRETBOARD', acc: '#2EC7F0', hi: '#BFF6FF', note: ['#FFFFFF', '#46E0FF'], top: '#0A1550', bot: '#1A34B8', halfW: 270 },
-  BA: { name: 'LOW END', acc: '#9B6BFF', hi: '#E3D6FF', note: ['#F3EDFF', '#9B6BFF'], top: '#0E0838', bot: '#2E1685', halfW: 280 },
-  DR: { name: 'KIT', acc: '#FF7A3D', hi: '#FFE0C8', note: ['#FFFFFF', '#FF7A3D'], top: '#0B0F3A', bot: '#2A1868', halfW: 300 },
-  KEY: { name: 'KEYS', acc: '#FF4FA0', hi: '#FFD6EA', note: ['#FFFFFF', '#FF4FA0'], top: '#0A1248', bot: '#1C2C96', halfW: 290 },
+  GT: { name: 'FRETBOARD', acc: '#2EC7F0', hi: '#BFF6FF', note: ['#FFFFFF', '#46E0FF'], top: '#0A1550', bot: '#1A34B8', halfW: 420 },
+  BA: { name: 'LOW END', acc: '#9B6BFF', hi: '#E3D6FF', note: ['#F3EDFF', '#9B6BFF'], top: '#0E0838', bot: '#2E1685', halfW: 430 },
+  DR: { name: 'KIT', acc: '#FF7A3D', hi: '#FFE0C8', note: ['#FFFFFF', '#FF7A3D'], top: '#0B0F3A', bot: '#2A1868', halfW: 450 },
+  KEY: { name: 'KEYS', acc: '#FF4FA0', hi: '#FFD6EA', note: ['#FFFFFF', '#FF4FA0'], top: '#0A1248', bot: '#1C2C96', halfW: 440 },
 };
 const KEYS_LABEL = { 4: ['D', 'F', 'J', 'K'], 5: ['D', 'F', 'J', 'K', 'SPACE'] };
 const DRUM = [{ n: 'HH', c: '#FFE14A' }, { n: 'SN', c: '#DDE6FF' }, { n: 'TOM', c: '#FF7A3D' }, { n: 'CR', c: '#FFC93A' }];
@@ -20,7 +20,7 @@ function Highway(cv, live, o = {}) {
   let th = TH0;
   const N = part === 'DR' ? 4 : live.lanes;
   const ctx = cv.getContext('2d');
-  const CX = 800, LINE = 772, HOR = 140, Dz = 1, SFAR = .15;
+  const CX = 800, LINE = 772, HOR = 140, Dz = 1, SFAR = .14, S0 = .08;
   const halfW = th.halfW, laneW = halfW * 2 / N;
   let K = 1;
   const H = {
@@ -34,12 +34,14 @@ function Highway(cv, live, o = {}) {
   const speed = () => 2.1 * (SETTINGS.speed || 1);
   const sOf = dt => { const z = dt * speed(); return z >= 0 ? Dz / (Dz + z) : 1 - z * .55; };
   const yOf = s => HOR + (LINE - HOR) * s;
-  const xOf = (lane, s) => CX + (-halfW + (lane + .5) * laneW) * s;
-  const edge = s => halfW * s;
+  const xs = s => (s - S0) / (1 - S0);            // horizontal scale: narrows faster than depth, edges stay straight
+  const xOf = (lane, s) => CX + (-halfW + (lane + .5) * laneW) * xs(s);
+  const edge = s => halfW * xs(s);
 
   const rr = (x, y, w, h, r) => { ctx.beginPath(); ctx.roundRect ? ctx.roundRect(x, y, w, h, r) : ctx.rect(x, y, w, h); };
   const para = (x, y, w, h, k) => { ctx.beginPath(); ctx.moveTo(x - w / 2 + k, y - h / 2); ctx.lineTo(x + w / 2 + k, y - h / 2); ctx.lineTo(x + w / 2 - k, y + h / 2); ctx.lineTo(x - w / 2 - k, y + h / 2); ctx.closePath(); };
-  const alphaFar = s => Math.max(0, Math.min(1, (s - SFAR) / .08));
+  const alphaFar = s => { const u = Math.max(0, Math.min(1, (s - SFAR) / .24)); return u * u * (3 - 2 * u); };
+  const fadeUp = (c, y0 = yOf(SFAR), y1 = yOf(SFAR + .34)) => { const g = ctx.createLinearGradient(0, y0, 0, y1); g.addColorStop(0, c + '00'); g.addColorStop(1, c); return g; };
 
   /* ---------- particles ---------- */
   function burst(x, y, c, n, o = {}) {
@@ -86,7 +88,7 @@ function Highway(cv, live, o = {}) {
       for (let i = 0; i < (gold ? 2 : 1); i++) H.fx.push({ k: 'note', x: x + (Math.random() - .5) * 40, y: y - 30, vx: (Math.random() - .5) * 60, vy: -160 - Math.random() * 90, life: 0, max: 1, c: i ? '#FFFFFF' : th.hi, g: 0, ch: ['♪', '♫', '♩'][Math.random() * 3 | 0] });
       burst(x, y, c, gold ? 10 : 6, { v: 420, r: 2.5 });
     }
-    if (n.kind === 'cover') { text(x, y - 60, 'COVER!', n.c || '#FF4FA0', { size: 30 }); burst(x, y, '#FFFFFF', 10, { v: 700 }); }
+    if (n.kind === 'cover') { text(x, y - 56, 'COVER!', n.c || '#FF4FA0', { size: 24 }); burst(x, y, '#FFFFFF', 10, { v: 700 }); }
   };
   /* the glow: a light column shooting up the lane + diamond flares on the line (additive) */
   function glow(n, k, x) {
@@ -104,8 +106,8 @@ function Highway(cv, live, o = {}) {
   function laneQuad(lane, sA, sB, wk = 1) {
     const hw = laneW / 2 * wk;
     ctx.beginPath();
-    ctx.moveTo(xOf(lane, sA) - hw * sA, yOf(sA)); ctx.lineTo(xOf(lane, sA) + hw * sA, yOf(sA));
-    ctx.lineTo(xOf(lane, sB) + hw * sB, yOf(sB)); ctx.lineTo(xOf(lane, sB) - hw * sB, yOf(sB)); ctx.closePath();
+    ctx.moveTo(xOf(lane, sA) - hw * xs(sA), yOf(sA)); ctx.lineTo(xOf(lane, sA) + hw * xs(sA), yOf(sA));
+    ctx.lineTo(xOf(lane, sB) + hw * xs(sB), yOf(sB)); ctx.lineTo(xOf(lane, sB) - hw * xs(sB), yOf(sB)); ctx.closePath();
   }
   function column(lane, amt, c, h = 1) {
     amt *= .6;
@@ -127,7 +129,7 @@ function Highway(cv, live, o = {}) {
     const yF = yOf(SFAR), yN = LINE + 46;
     const sN = 1 + 46 / (LINE - HOR);
     const g = ctx.createLinearGradient(0, yF, 0, yN);
-    g.addColorStop(0, th.top + '00'); g.addColorStop(.25, th.top + 'CC'); g.addColorStop(1, th.bot + 'EE');
+    g.addColorStop(0, th.top + '00'); g.addColorStop(.3, th.top + '70'); g.addColorStop(.55, th.top + 'A6'); g.addColorStop(1, th.bot + 'D9');
     ctx.fillStyle = g;
     ctx.beginPath(); ctx.moveTo(CX - edge(SFAR), yF); ctx.lineTo(CX + edge(SFAR), yF); ctx.lineTo(CX + edge(sN), yN); ctx.lineTo(CX - edge(sN), yN); ctx.closePath(); ctx.fill();
     // lane tint columns (keys look like keys running into the distance)
@@ -135,16 +137,18 @@ function Highway(cv, live, o = {}) {
       if (i % 2) continue;
       ctx.fillStyle = part === 'KEY' ? 'rgba(255,255,255,.035)' : 'rgba(0,0,0,.18)';
       const a = -halfW + i * laneW, b = a + laneW;
-      ctx.beginPath(); ctx.moveTo(CX + a * SFAR, yF); ctx.lineTo(CX + b * SFAR, yF); ctx.lineTo(CX + b * sN, yN); ctx.lineTo(CX + a * sN, yN); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(CX + a * xs(SFAR), yF); ctx.lineTo(CX + b * xs(SFAR), yF); ctx.lineTo(CX + b * xs(sN), yN); ctx.lineTo(CX + a * xs(sN), yN); ctx.fill();
     }
     // separators
     ctx.lineWidth = 1;
     for (let i = 1; i < N; i++) {
       const a = -halfW + i * laneW;
-      ctx.strokeStyle = part === 'DR' ? 'rgba(0,0,0,.45)' : 'rgba(255,255,255,.07)';
+      ctx.strokeStyle = fadeUp(part === 'DR' ? '#000000' : '#FFFFFF');
+      ctx.globalAlpha = part === 'DR' ? .45 : .07;
       if (part === 'GT' || part === 'BA') continue;
-      ctx.beginPath(); ctx.moveTo(CX + a * SFAR, yF); ctx.lineTo(CX + a * sN, yN); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(CX + a * xs(SFAR), yF); ctx.lineTo(CX + a * xs(sN), yN); ctx.stroke();
     }
+    ctx.globalAlpha = 1;
     // beat / bar lines (frets)
     const b0 = Math.ceil(Charter.beatOf(live.tm, t - .3)), b1 = Math.floor(Charter.beatOf(live.tm, t + 3.2));
     for (let b = b0; b <= b1; b++) {
@@ -160,11 +164,14 @@ function Highway(cv, live, o = {}) {
       }
     }
     ctx.globalAlpha = 1;
+    const hz = ctx.createRadialGradient(CX, yF + 40, 0, CX, yF + 40, 220);
+    hz.addColorStop(0, th.acc + '2E'); hz.addColorStop(1, th.acc + '00');
+    ctx.fillStyle = hz; ctx.save(); ctx.translate(CX, yF + 40); ctx.scale(1, .45); ctx.translate(-CX, -(yF + 40)); ctx.fillRect(CX - 220, yF - 180, 440, 440); ctx.restore();
     // edges: glow brighter with heat, pulse on the beat
     const pulse = .55 + .45 * H.beatPulse, ampK = H.amp;
     ctx.save();
     ctx.shadowColor = th.acc; ctx.shadowBlur = 14 + ampK * 20;
-    ctx.strokeStyle = th.acc; ctx.lineWidth = 4 + ampK * 2; ctx.globalAlpha = .75 * pulse + ampK * .25;
+    ctx.strokeStyle = fadeUp(th.acc); ctx.lineWidth = 4 + ampK * 2; ctx.globalAlpha = .75 * pulse + ampK * .25;
     for (const sg of [-1, 1]) { ctx.beginPath(); ctx.moveTo(CX + sg * edge(SFAR), yF); ctx.lineTo(CX + sg * edge(sN), yN); ctx.stroke(); }
     ctx.restore();
     if (ampK > 0) {                                                     // AMP: light streaks racing down the edges
@@ -186,7 +193,7 @@ function Highway(cv, live, o = {}) {
       L.vib *= Math.pow(part === 'BA' ? .02 : .006, dt); L.vibT += dt;
       const held = live.holding[i], amp = L.vib + (held ? (part === 'BA' ? 5 : 3) : 0);
       const wBase = part === 'BA' ? 3.2 + (N - i) * .9 : 1.4 + (N - i) * .45;
-      ctx.strokeStyle = L.down || held ? '#FFFFFF' : th.hi;
+      ctx.strokeStyle = fadeUp(L.down || held ? '#FFFFFF' : th.hi);
       ctx.globalAlpha = L.down || held ? .95 : .38;
       ctx.lineWidth = wBase;
       if (L.down || held) { ctx.shadowColor = th.acc; ctx.shadowBlur = 16; }
@@ -243,7 +250,7 @@ function Highway(cv, live, o = {}) {
         ctx.globalAlpha = L.press * .8; ctx.fillStyle = g;
         const s2 = sOf(.9);
         ctx.beginPath(); ctx.moveTo(xOf(i, 1) - laneW / 2 + 3, LINE); ctx.lineTo(xOf(i, 1) + laneW / 2 - 3, LINE);
-        ctx.lineTo(xOf(i, s2) + laneW / 2 * s2, yOf(s2)); ctx.lineTo(xOf(i, s2) - laneW / 2 * s2, yOf(s2)); ctx.fill();
+        ctx.lineTo(xOf(i, s2) + laneW / 2 * xs(s2), yOf(s2)); ctx.lineTo(xOf(i, s2) - laneW / 2 * xs(s2), yOf(s2)); ctx.fill();
         ctx.restore(); ctx.globalAlpha = 1;
       }
       if (part === 'GT') {
@@ -277,18 +284,54 @@ function Highway(cv, live, o = {}) {
       L.miss = Math.max(0, L.miss - dt * 4);
       ctx.fillStyle = '#FFD2B8'; ctx.globalAlpha = .7; ctx.font = '12px "DotGothic16"'; ctx.textAlign = 'center'; ctx.fillText('KICK · SPACE', CX, LINE + 64); ctx.globalAlpha = 1;
     }
-    // keyboard for KEY
+    // keyboard for KEY: real keys in the road's perspective — a navy case, white keys with a front lip, black keys between
     if (part === 'KEY') {
+      const D = LINE - HOR, sOfY = y => 1 + (y - LINE) / D;
+      const quad = (a, b, y0, y1, dy = 0) => {
+        const s0 = sOfY(y0), s1 = sOfY(y1);
+        ctx.beginPath();
+        ctx.moveTo(CX + a * xs(s0), y0 + dy); ctx.lineTo(CX + b * xs(s0), y0 + dy);
+        ctx.lineTo(CX + b * xs(s1), y1 + dy); ctx.lineTo(CX + a * xs(s1), y1 + dy); ctx.closePath();
+      };
+      const TOP = LINE + 3, FACE = LINE + 80, LIP = LINE + 94;
+      // case
+      const cg = ctx.createLinearGradient(0, LINE, 0, LIP + 8);
+      cg.addColorStop(0, '#0A1242'); cg.addColorStop(1, '#040B2E');
+      ctx.fillStyle = cg; quad(-halfW - 14, halfW + 14, LINE - 2, LIP + 8); ctx.fill();
+      ctx.fillStyle = fadeUp(th.acc, LIP + 8, LINE); ctx.globalAlpha = .35; quad(-halfW - 14, halfW + 14, LIP + 5, LIP + 8); ctx.fill(); ctx.globalAlpha = 1;
       for (let i = 0; i < N; i++) {
-        const L = H.lane[i], x = xOf(i, 1), d = Math.max(L.press, L.hit * .7), dy = d * 5;
-        const g = ctx.createLinearGradient(0, LINE, 0, LINE + 92);
-        g.addColorStop(0, d > .05 ? '#FFD6EA' : '#F4F6FF'); g.addColorStop(1, d > .05 ? '#FF7FBC' : '#C9D4FF');
-        ctx.fillStyle = g; rr(x - laneW / 2 + 3, LINE + 4 + dy, laneW - 6, 88 - dy, 8); ctx.fill();
-        ctx.fillStyle = 'rgba(20,27,77,.35)'; ctx.fillRect(x - laneW / 2 + 3, LINE + 86, laneW - 6, 6);
-        if (L.miss > 0) { ctx.fillStyle = `rgba(255,80,110,${L.miss * .6})`; rr(x - laneW / 2 + 3, LINE + 4, laneW - 6, 88, 8); ctx.fill(); }
-        ctx.fillStyle = '#141B4D'; ctx.globalAlpha = .55; ctx.font = '16px "Dela Gothic One"'; ctx.textAlign = 'center'; ctx.fillText(KEYS_LABEL[4][i], x, LINE + 76 + dy); ctx.globalAlpha = 1;
+        const L = H.lane[i], d = Math.max(L.press, L.hit * .7), dy = d * 5, on = d > .05;
+        const a = -halfW + i * laneW + 2.5, b = a + laneW - 5;
+        // front lip first (the key's thickness), then the top face over it
+        ctx.fillStyle = on ? '#C23D82' : '#8C9EE0'; quad(a, b, FACE, LIP, dy * .4); ctx.fill();
+        const g = ctx.createLinearGradient(0, TOP, 0, FACE);
+        if (on) { g.addColorStop(0, '#FFFFFF'); g.addColorStop(.35, th.hi); g.addColorStop(1, '#FF8CC6'); }
+        else { g.addColorStop(0, '#FFFFFF'); g.addColorStop(.6, '#EEF2FF'); g.addColorStop(1, '#D3DCFF'); }
+        ctx.fillStyle = g; quad(a, b, TOP, FACE, dy); ctx.fill();
+        // soft shadow the black keys throw, and a crisp highlight on the top edge
+        ctx.fillStyle = 'rgba(20,27,77,.10)'; quad(a, b, TOP, TOP + 18, dy); ctx.fill();
+        ctx.fillStyle = 'rgba(255,255,255,.95)'; quad(a + 3, b - 3, TOP, TOP + 2.5, dy); ctx.fill();
+        if (on) {                                       // pressed: light pours out of the gap above the key
+          ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = d * .7;
+          ctx.fillStyle = fadeUp(th.acc, TOP + 30, TOP); quad(a, b, TOP, TOP + 30, dy); ctx.fill(); ctx.restore();
+        }
+        if (L.miss > 0) { ctx.fillStyle = `rgba(255,43,78,${L.miss * .55})`; quad(a, b, TOP, LIP, dy); ctx.fill(); }
+        // keycap label near the front
+        const ly = FACE - 20 + dy, cw = 26, ch = 22;
+        ctx.globalAlpha = on ? .9 : .7;
+        ctx.strokeStyle = on ? '#FFFFFF' : '#56619A'; ctx.lineWidth = 1.5; rr(xOf(i, sOfY(ly)) - cw / 2, ly - ch / 2, cw, ch, 5); ctx.stroke();
+        ctx.fillStyle = on ? '#FFFFFF' : '#141B4D'; ctx.font = '13px "Dela Gothic One"'; ctx.textAlign = 'center';
+        ctx.fillText(KEYS_LABEL[4][i], xOf(i, sOfY(ly)), ly + 5);
+        ctx.globalAlpha = 1;
       }
-      for (const i of [1, 3]) { const x = CX - halfW + i * laneW; ctx.fillStyle = '#141B4D'; rr(x - 17, LINE + 2, 34, 50, 5); ctx.fill(); ctx.fillStyle = 'rgba(255,255,255,.12)'; ctx.fillRect(x - 12, LINE + 5, 24, 5); }
+      for (const i of [1, 3]) {                         // black keys: glossy, shorter, sitting on the gap
+        const c = -halfW + i * laneW, w = laneW * .16, y1 = LINE + 50;
+        ctx.fillStyle = '#05091F'; quad(c - w, c + w, y1 - 4, y1 + 5); ctx.fill();
+        const g = ctx.createLinearGradient(0, TOP, 0, y1);
+        g.addColorStop(0, '#2A3478'); g.addColorStop(.25, '#141B4D'); g.addColorStop(1, '#0A0F33');
+        ctx.fillStyle = g; quad(c - w, c + w, TOP - 1, y1 - 4); ctx.fill();
+        ctx.fillStyle = 'rgba(169,241,255,.35)'; quad(c - w + 4, c + w - 4, TOP + 3, TOP + 6); ctx.fill();
+      }
     } else {
       ctx.font = '15px "Dela Gothic One"'; ctx.textAlign = 'center';
       for (let i = 0; i < N; i++) { const L = H.lane[i]; ctx.fillStyle = L.down ? th.acc : 'rgba(234,240,255,.55)'; ctx.fillText(KEYS_LABEL[4][i], xOf(i, 1), part === 'DR' ? LINE + 100 : LINE + 44); }
@@ -298,18 +341,20 @@ function Highway(cv, live, o = {}) {
   /* ---------- notes ---------- */
   function note(n, t) {
     const dt = n.t - t;
-    if (n.j !== null && !(n.len && n.hold === 'on')) {
+    const ribbon = n.len && (n.hold === 'on' || n.hold === 'drop');   // held, or let go / missed: the tail keeps coming
+    if (ribbon && n.end < t) return;
+    if (n.j !== null && !ribbon) {
       if (n.j < 3 || n.ghost) return;
       if (dt < -.35) return;                          // missed: slide past the line and fade
     }
     const s = sOf(dt);
-    if (s < SFAR || s > 1.45) return;
-    const a = alphaFar(s) * (n.j === 3 ? Math.max(0, 1 + dt * 3) * .45 : 1);
+    if (s < SFAR || (s > 1.45 && !ribbon)) return;
+    const a = ribbon ? 1 : alphaFar(s) * (n.j === 3 ? Math.max(0, 1 + dt * 3) * .45 : 1);
     if (a <= 0) return;
     const y = yOf(s);
     ctx.globalAlpha = a;
     if (n.ghost) {
-      const gx = xOf(n.lane, s), gw = laneW * s * .74, gh = 16 * s + 4;
+      const gx = xOf(n.lane, s), gw = laneW * xs(s) * .74, gh = 16 * s + 4;
       if (n.rec) {                                   // RECOVER notes: solid yellow, glowing — the one thing still lit
         const pulse = .8 + .2 * Math.sin(t * 14);
         ctx.save(); ctx.globalAlpha = a * pulse; ctx.shadowColor = '#FFE14A'; ctx.shadowBlur = 22;
@@ -334,21 +379,23 @@ function Highway(cv, live, o = {}) {
     const extra = n.kind === 'extra', c0 = cover || extra ? '#FFFFFF' : th.note[0], c1 = cover || extra ? (n.c || '#FF4FA0') : n.eye != null ? (live.eyes[n.eye] && live.eyes[n.eye].c) || th.note[1] : th.note[1];
     // hold body first
     if (n.len) {
-      const tail = n.end - t, st = Math.max(SFAR, sOf(tail)), sh = n.hold === 'on' ? 1 : s, yt = yOf(st), yh = yOf(sh);
+      const tail = n.end - t, st = Math.max(SFAR, sOf(tail)), sh = ribbon ? 1 : s, yt = yOf(st), yh = yOf(sh);
       const wk = part === 'KEY' ? .72 : part === 'BA' ? .86 : .8;
       const on = n.hold === 'on', drop = n.hold === 'drop';
       ctx.save(); ctx.globalCompositeOperation = drop ? 'source-over' : 'lighter';
-      ctx.globalAlpha = a * (drop ? .18 : on ? .6 + .12 * Math.sin(t * 30) : .45);
-      const g = ctx.createLinearGradient(0, yt, 0, yh); g.addColorStop(0, c1 + '10'); g.addColorStop(.5, c1 + '60'); g.addColorStop(1, c1 + (on ? 'CC' : 'AA'));
+      ctx.globalAlpha = a * (drop ? .3 : on ? .6 + .12 * Math.sin(t * 30) : .45);
+      const cr = drop ? '#9AA0BC' : c1;                // a dropped ribbon goes grey but stays readable
+      const g = ctx.createLinearGradient(0, yt, 0, yh); g.addColorStop(0, cr + '10'); g.addColorStop(.5, cr + '60'); g.addColorStop(1, cr + (on ? 'CC' : 'AA'));
       ctx.fillStyle = g; laneQuad(n.lane, sh, st, wk); ctx.fill();
       // bright rails on both sides of the ribbon
-      ctx.strokeStyle = on ? '#FFFFFF' : c1; ctx.lineWidth = 2.5; ctx.globalAlpha = a * (drop ? .2 : on ? 1 : .7);
-      for (const sg of [-1, 1]) { ctx.beginPath(); ctx.moveTo(xOf(n.lane, sh) + sg * laneW / 2 * wk * sh, yh); ctx.lineTo(xOf(n.lane, st) + sg * laneW / 2 * wk * st, yt); ctx.stroke(); }
+      ctx.strokeStyle = on ? '#FFFFFF' : cr; ctx.lineWidth = 2.5; ctx.globalAlpha = a * (drop ? .35 : on ? 1 : .7);
+      for (const sg of [-1, 1]) { ctx.beginPath(); ctx.moveTo(xOf(n.lane, sh) + sg * laneW / 2 * wk * xs(sh), yh); ctx.lineTo(xOf(n.lane, st) + sg * laneW / 2 * wk * xs(st), yt); ctx.stroke(); }
       ctx.restore();
+      if (drop) { ctx.globalAlpha = 1; return; }
       if (on) { if (Math.random() < .6) H.fx.push({ k: 'diamond', x: xOf(n.lane, 1) + (Math.random() - .5) * laneW * .6, y: LINE - 6, vy: -140 - Math.random() * 120, life: 0, max: .45, c: Math.random() < .5 ? '#FFFFFF' : c1, r: 5 + Math.random() * 6, sx: 1, float: true }); return; }
       ctx.globalAlpha = a;
     }
-    const w = laneW * s, g = ctx.createLinearGradient(0, y - 14 * s, 0, y + 14 * s);
+    const w = laneW * xs(s), g = ctx.createLinearGradient(0, y - 14 * s, 0, y + 14 * s);
     g.addColorStop(0, c0); g.addColorStop(1, c1);
     ctx.fillStyle = g; ctx.strokeStyle = '#0B1033'; ctx.lineWidth = 2.5;
     if (extra) {                                     // shared notes: a gem, same on every instrument, tinted by the stem
@@ -379,7 +426,7 @@ function Highway(cv, live, o = {}) {
   function notes(t) {
     const list = live.notes;
     // chord connectors (same time, 2+ lanes)
-    let i = Math.max(0, live.mi - 8);
+    let i = Math.max(0, live.mi - 64);
     const vis = [];
     for (; i < list.length; i++) { const n = list[i]; if (n.t - t > 3.6 / (SETTINGS.speed || 1)) break; vis.push(n); }
     ctx.lineWidth = 3;
@@ -395,9 +442,9 @@ function Highway(cv, live, o = {}) {
   }
 
   /* ---------- member mini lanes ---------- */
-  const SLOT = [[508, 1], [558, 1], [1042, -1], [1092, -1]];
+  const SLOT = [[430, 1], [474, 1], [1126, -1], [1170, -1]];
   function members(t, dt) {
-    const top = 250, bot = 590, span = 1.4;
+    const top = 230, bot = 540, span = 1.4;
     live.members.forEach((m, i) => {
       const [x] = SLOT[i] || SLOT[0], w = 28;
       m.flash = Math.max(0, m.flash - dt * 5);
@@ -493,7 +540,7 @@ function Highway(cv, live, o = {}) {
     ctx.setTransform(K, 0, 0, K, 0, 0);
     ctx.clearRect(0, 0, 1600, 900);
     const sx = (Math.random() - .5) * H.shake * 2, sy = H.thump + (Math.random() - .5) * H.shake;
-    const pk = 1 + H.punch * .018;
+    const pk = 1 + H.punch * .018 + H.beatPulse * .006;
     ctx.setTransform(K * pk, 0, 0, K * pk, K * (sx + CX * (1 - pk)), K * (sy + LINE * (1 - pk)));
     if (part === 'BA') {                                 // sub cone under the line
       const r = 150 + H.beatPulse * 14 + H.thump * 6;

@@ -221,14 +221,17 @@ const VIA = {
     }, 300 * G.K);
     return 640;
   },
+  // white panel sweeps in, the blue one right behind it; swap; blue leaves first, then white
   slam(done) {
-    const s = $('.fx-slam', fx);
-    A(s, [{ translate: '-110% 0' }, { translate: '0 0' }], 300, { e: EZ.slam, fill: 'forwards' });
+    const el = fxEl('fx-slide', '<i></i><b></b>'), w = $('i', el), b = $('b', el);
+    A(w, [{ translate: '-115% 0' }, { translate: '0 0' }], 300, { e: EZ.slam, fill: 'forwards' });
+    A(b, [{ translate: '-115% 0' }, { translate: '0 0' }], 300, { e: EZ.slam, delay: 110, fill: 'forwards' });
     setTimeout(() => {
       done();
-      A(s, [{ translate: '0 0' }, { translate: '110% 0' }], 360, { e: EZ.wipe, fill: 'forwards' });
-    }, 380 * G.K);
-    return 760;
+      A(b, [{ translate: '0 0' }, { translate: '115% 0' }], 340, { e: EZ.wipe, fill: 'forwards' });
+      A(w, [{ translate: '0 0' }, { translate: '115% 0' }], 340, { e: EZ.wipe, delay: 110, fill: 'forwards' });
+    }, 460 * G.K);
+    return 920;
   },
   cut(done) { done(); return 0; },
 };

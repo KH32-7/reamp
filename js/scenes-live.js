@@ -55,11 +55,18 @@ scene('live', {
     <div class="lv-crowd"></div>
     <canvas class="lv-cv"></canvas>
     <div class="lv-prog"><i></i></div>
-    <div class="lv-song"><span class="unskew"><b class="lv-t"></b><small class="lv-d"></small></span></div>
-    <div class="lv-sync"><div class="lb"><span>BAND SYNC</span><b class="sy-n">60%</b></div><div class="seg">${'<i></i>'.repeat(20)}</div></div>
-    <div class="lv-score"><b class="sc-n">0</b><small>SCORE</small></div>
+    <div class="lv-score">
+      <div class="rk"><small>RANK</small><b class="rk-n">D</b></div>
+      <div class="sc">
+        <div class="sc-lb">SCORE <b class="lv-t"></b><small class="lv-d"></small></div>
+        <div class="sc-bar"><i class="fill"></i><u data-r="C" style="left:70%"></u><u data-r="B" style="left:80%"></u><u data-r="A" style="left:90%"></u><u data-r="S" style="left:95%"></u></div>
+        <b class="sc-n"><span class="z">00000000</span></b>
+      </div>
+    </div>
+    <div class="lv-heat"><div class="ht-top"><span class="ht-lb">CROWD HEAT</span><em class="ht-amp">AMP!</em><b class="ht-n">50</b></div><div class="ht-bar"><b></b><i class="ht-80"></i></div></div>
+    <div class="lv-sync"><span>BAND SYNC</span><div class="segs">${'<i></i>'.repeat(20)}</div><b class="sy-n">60%</b></div>
+    <div class="lv-pz" aria-label="일시정지"><i></i><i></i></div>
     <div class="lv-party"></div>
-    <div class="lv-heat"><div class="ht-bar"><b></b><i class="ht-80"></i></div><span class="ht-lb">CROWD HEAT</span><b class="ht-n">50</b><em class="ht-amp">AMP!</em></div>
     <div class="lv-inst"><b></b><small></small></div>
     <div class="lv-jd"><b class="jt"></b><em class="fs"></em></div>
     <div class="lv-combo"><b class="cb-n"></b><small>COMBO</small></div>
@@ -73,6 +80,7 @@ scene('live', {
     <div class="lv-fail"><div class="fl-dim"></div><div class="fl-word">SILENCE</div><div class="fl-q">관객이 조용해졌다.</div><div class="fl-list"><span>다시 한다</span><span>조금 쉽게 다시 한다</span><span>받아들인다</span></div></div>`,
   init(el) {
     this.cv = $('.lv-cv', el);
+    $('.lv-pz', el).addEventListener('click', e => { e.stopPropagation(); if (G.cur === 'live' && this.L && !this.L.finished && !this.menu) this.pauseMenu(); });
     this.onKey = e => this.key2(e, true);
     this.onKeyUp = e => this.key2(e, false);
   },
@@ -82,7 +90,7 @@ scene('live', {
     const el = this.el;
     this.arg = arg;
     this.stopLoop();
-    el.className = el.className.replace(/\b(amp|silence|bo|hands|ready|th-\w+)\b/g, '').trim();
+    el.className = el.className.replace(/\b(amp|cold|silence|bo|hands|ready|th-\w+)\b/g, '').trim();
     const song = typeof arg.song === 'string' ? SONGS.find(s => s.id === arg.song) : arg.song || SONGS[0];
     const part = arg.part || G.inst || 'GT', diff = arg.diff ?? G.diff ?? 1;
     this.part = part;
@@ -120,7 +128,7 @@ scene('live', {
     this.rawKeys = true;
     L.start(2.6);
     this.countdown();
-    this.shown = { score: 0 };
+    this.shown = { score: 0, rank: '', syncOn: -1 };
     this.loop();
   },
   leave() {
@@ -136,12 +144,12 @@ scene('live', {
     const el = this.el;
     A($('.lv-img', el), [{ opacity: 0, scale: '1.1' }, { opacity: 1, scale: '1' }], 1200, { e: EZ.soft });
     A($('.lv-title', el), KF.fromTop('-20%'), T.char);
-    A($('.lv-song', el), KF.fromLeft('-120%'), T.slam, { delay: 80 });
-    A($('.lv-score', el), KF.fromRight('60%'), T.slam, { delay: 120 });
-    A($('.lv-sync', el), KF.fromTop('-200%'), T.slam, { delay: 160 });
-    A($('.lv-heat', el), KF.fromRight('200%'), T.char, { delay: 220 });
+    A($('.lv-score', el), KF.fromLeft('-40%'), T.slam, { delay: 80 });
+    A($('.lv-heat', el), KF.fromRight('40%'), T.slam, { delay: 120 });
+    A($('.lv-sync', el), KF.fromRight('40%'), T.slam, { delay: 180 });
+    A($('.lv-pz', el), KF.popIn, T.pop, { delay: 240, e: EZ.pop });
+    stagger($$('.lv-prow', el), KF.fromLeft('-60%'), T.slam, 200, 60);
     A($('.lv-inst', el), KF.fromBottom('200%'), T.char, { delay: 300 });
-    stagger($$('.lv-prow', el), KF.fromLeft('-60%'), T.slam, 180, 70);
     A(this.cv, [{ clipPath: 'inset(100% 0 0 0)', opacity: .2 }, { clipPath: 'inset(0 0 0 0)', opacity: 1 }], 700, { e: EZ.wipe, delay: 200 });
   },
   countdown() {
@@ -173,17 +181,43 @@ scene('live', {
     const L = this.L, el = this.el, s = this.shown;
     s.score += (L.score - s.score) * .25;
     if (Math.abs(L.score - s.score) < 1) s.score = L.score;
-    $('.sc-n', el).textContent = Math.round(s.score).toLocaleString('en-US');
-    const segs = $$('.lv-sync .seg i', el), on = Math.round(L.sync / 5);
-    if (this.syncOn !== on) { this.syncOn = on; segs.forEach((g, i) => g.classList.toggle('on', i < on)); $('.sy-n', el).textContent = Math.round(L.sync) + '%'; }
-    $('.ht-bar b', el).style.height = L.heat + '%';
+    const str = String(Math.round(s.score)).padStart(8, '0'), nz = str.search(/[1-9]/);
+    if (str !== s.str) { s.str = str; $('.sc-n', el).innerHTML = nz < 0 ? `<span class="z">${str}</span>` : `<span class="z">${str.slice(0, nz)}</span>${str.slice(nz)}`; }
+    $('.sc-bar .fill', el).style.width = (s.score / 1e4) + '%';
+    const sc = L.score, rk = sc >= 980000 ? 'SS' : sc >= 950000 ? 'S' : sc >= 900000 ? 'A' : sc >= 800000 ? 'B' : sc >= 700000 ? 'C' : 'D';
+    if (rk !== s.rank) {
+      const first = !s.rank; s.rank = rk;
+      const r = $('.rk-n', el); r.textContent = rk; r.style.fontSize = rk.length > 1 ? '44px' : '';
+      if (!first) A(r, [{ scale: '1.5', rotate: '-8deg' }, { scale: '1', rotate: '0deg' }], 260, { e: EZ.pop });
+      $$('.sc-bar u', el).forEach(u => u.classList.toggle('on', sc >= { C: 7e5, B: 8e5, A: 9e5, S: 9.5e5 }[u.dataset.r]));
+    }
+    const on = Math.round(L.sync / 5);
+    if (s.syncOn !== on) { s.syncOn = on; $$('.lv-sync .segs i', el).forEach((g, i) => g.classList.toggle('on', i < on)); $('.sy-n', el).textContent = Math.round(L.sync) + '%'; }
+    $('.ht-bar b', el).style.width = L.heat + '%';
     $('.ht-n', el).textContent = Math.round(L.heat);
+    el.classList.toggle('cold', L.heat < 25 && !L.bo);
     const prog = Math.max(0, Math.min(1, L.time / L.endT));
     $('.lv-prog i', el).style.transform = `scaleX(${prog})`;
-    // stage lights breathe on the beat, harder when the crowd is hot
-    const b = Charter.beatOf(L.tm, L.time), k = b > 0 && !L.bo ? Math.exp(-(b % 1) * 4) * (.3 + L.heat / 140) : 0;
-    el.style.setProperty('--pulse', k.toFixed(3));
-    el.style.setProperty('--jump', (b > 0 && !L.bo && L.heat > 40 ? Math.abs(Math.sin(b * Math.PI)) * (L.heat - 40) / 60 : 0).toFixed(3));
+    // lights breathe on the beat (harder when the crowd is hot); the stage and HUD thump, a touch harder on the downbeat
+    const b = Charter.beatOf(L.tm, L.time), live = b > 0 && !L.bo && !L.paused, ph = ((b % 1) + 1) % 1;
+    el.style.setProperty('--pulse', live ? (Math.exp(-ph * 4) * (.3 + L.heat / 140)).toFixed(3) : 0);
+    el.style.setProperty('--thump', live && !REDUCED ? (Math.exp(-ph * 7) * (Math.floor(b) % 4 === 0 ? 1 : .6)).toFixed(3) : 0);
+    el.style.setProperty('--jump', (live && L.heat > 40 ? Math.abs(Math.sin(b * Math.PI)) * (L.heat - 40) / 60 : 0).toFixed(3));
+  },
+
+  judgeText(k, dt = 0) {
+    const jt = $('.jt', this.el), fs = $('.fs', this.el);
+    jt.textContent = JN[k]; jt.dataset.k = k;
+    fs.textContent = k === 1 || k === 2 ? (dt < 0 ? 'FAST' : 'SLOW') : ''; fs.dataset.f = dt < 0 ? 'f' : 's';
+    jt.getAnimations().forEach(a => a.cancel());
+    A(jt, k === 3
+      ? [{ translate: '0 -20%', opacity: .9 }, { translate: '0 10%', opacity: .9, offset: .5 }, { opacity: 0 }]
+      : [{ scale: '1.3', opacity: .3 }, { scale: '1', opacity: 1, offset: .2 }, { opacity: 1, offset: .7 }, { opacity: 0 }], 700, { fill: 'forwards' });
+  },
+  comboShow() {
+    const cb = $('.lv-combo', this.el), n = $('.cb-n', this.el), c = this.L.combo;
+    if (c >= 5) { cb.style.opacity = 1; n.textContent = c; n.getAnimations().forEach(a => a.cancel()); A(n, [{ scale: '1.2', translate: '0 -6%' }, { scale: '1', translate: '0 0' }], 140, { e: EZ.pop }); }
+    else cb.style.opacity = 0;
   },
 
   /* ---------- engine events → DOM ---------- */
@@ -191,19 +225,15 @@ scene('live', {
     const el = this.el, R = this.R;
     if (type === 'judge') {
       R.hit(d.n, d.k);
-      const jt = $('.jt', el), fs = $('.fs', el);
-      jt.textContent = JN[d.k]; jt.dataset.k = d.k;
-      fs.textContent = d.k === 1 || d.k === 2 ? (d.dt < 0 ? 'FAST' : 'SLOW') : ''; fs.dataset.f = d.dt < 0 ? 'f' : 's';
-      jt.getAnimations().forEach(a => a.cancel());
-      A(jt, d.k === 3 ? [{ translate: '0 -30%', opacity: 1 }, { translate: '0 20%', opacity: .9 }] : [{ scale: '1.5', rotate: '-12deg', opacity: .4 }, { scale: '1', rotate: '-6deg', opacity: 1 }], d.k === 3 ? 260 : 200, { e: d.k === 3 ? EZ.soft : EZ.pop });
-      const cb = $('.lv-combo', el), n = this.L.combo;
-      if (n >= 5) { cb.style.opacity = 1; $('.cb-n', cb).textContent = n; $('.cb-n', cb).getAnimations().forEach(a => a.cancel()); A($('.cb-n', cb), [{ scale: '1.25', translate: '0 -8%' }, { scale: '1', translate: '0 0' }], 140, { e: EZ.pop }); }
-      else cb.style.opacity = 0;
-      if (d.k === 3 && this.L.combo === 0) { A($('.lv-score', el), [{ translate: '-4px 0' }, { translate: '4px 0' }, { translate: '0 0' }], 140); }
+      this.judgeText(d.k, d.dt);
+      this.comboShow();
+      if (d.k === 3 && this.L.combo === 0) A($('.lv-score', el), [{ translate: '-4px 0' }, { translate: '4px 0' }, { translate: '0 0' }], 140);
     } else if (type === 'ghost') {
       R.ghostHit(d.n, d.k);
     } else if (type === 'hold') {
-      if (d.ok) R.hit({ ...d.n, kind: 'tap' }, 0);
+      // the tail's verdict is shown too: letting go early reads as a MISS, never as a silent success
+      if (d.ok) R.hit({ ...d.n, kind: 'tap' }, 0); else this.judgeText(3);
+      this.comboShow();
     } else if (type === 'empty') {
       R.lane[d.lane] && (R.lane[d.lane].press = 1);
     } else if (type === 'member') {
@@ -239,7 +269,7 @@ scene('live', {
   renderParty() {
     const L = this.L;
     $('.lv-party', this.el).innerHTML = `<span class="lead">${this.arg.scenario === 'lab' && this.arg.party === 'band' ? 'BAND' : 'SIGNAL LOST'}</span>` +
-      `<div class="lv-prow you" style="--c:var(--lime)"><div class="av"><img src="${icon('you')}" alt=""></div><div class="in"><div class="nm">${G.name || 'YOU'}<small>${this.part} · VO</small></div></div></div>` +
+      `<div class="lv-prow you" style="--c:#4FE3FF"><div class="av"><img src="${icon('you')}" alt=""></div><div class="in"><div class="nm">${G.name || 'YOU'}<small>${this.part} · VO</small></div></div></div>` +
       L.members.map(m => `<div class="lv-prow${m.blur ? ' blur' : ''}" data-id="${m.id}" style="--c:${m.c}"><div class="av">${m.icon ? `<img src="${m.icon}" alt="">` : '<i class="sil"></i>'}</div><div class="in"><div class="nm">${m.en}<small>${m.part}</small></div></div><span class="st">ON AIR</span></div>`).join('');
   },
 
@@ -248,13 +278,13 @@ scene('live', {
     $('b', b).textContent = big; $('small', b).textContent = small || '';
     b.style.setProperty('--bc', c || '#FFFFFF');
     b.getAnimations().forEach(a => a.cancel());
-    A(b, [{ clipPath: 'polygon(0 0,0 0,0 100%,0 100%)', opacity: 1 }, { clipPath: 'polygon(0 0,100% 0,100% 100%,0 100%)', opacity: 1, offset: .18 }, { clipPath: 'polygon(0 0,100% 0,100% 100%,0 100%)', opacity: 1, offset: .8 }, { clipPath: 'polygon(100% 0,100% 0,100% 100%,100% 100%)', opacity: 1 }], quick ? 900 : 1500, { e: EZ.lin, fill: 'forwards' });
-    A($('b', b), [{ translate: '-12% 0' }, { translate: '0 0' }], 400, { e: EZ.slam });
+    A(b, [{ clipPath: 'polygon(100% 0,100% 0,100% 100%,100% 100%)', opacity: 1 }, { clipPath: 'polygon(0 0,100% 0,100% 100%,0 100%)', opacity: 1, offset: .15 }, { clipPath: 'polygon(0 0,100% 0,100% 100%,0 100%)', opacity: 1, offset: .82 }, { clipPath: 'polygon(0 0,100% 0,100% 100%,100% 100%)', opacity: 0 }], quick ? 1000 : 1500, { e: EZ.lin, fill: 'forwards' });
+    A($('b', b), [{ translate: '12% 0' }, { translate: '0 0' }], 400, { e: EZ.slam });
   },
   tip(d) {
     const t = $('.lv-tip', this.el);
     t.innerHTML = `<i>TUTORIAL</i><span>${d.text}</span>`;
-    t.style.setProperty('--tc', d.c || 'var(--lime)');
+    t.style.setProperty('--tc', d.c || 'var(--cyan)');
     t.getAnimations().forEach(a => a.cancel());
     A(t, [{ translate: '0 -140%', opacity: 0 }, { translate: '0 0', opacity: 1, offset: .08 }, { translate: '0 0', opacity: 1, offset: .92 }, { translate: '0 -140%', opacity: 0 }], (d.dur || 4) * 1000, { e: EZ.lin, fill: 'forwards' });
   },
@@ -314,7 +344,11 @@ scene('live', {
   /* ---------- keyboard (raw, for timing) ---------- */
   key2(e, down) {
     if (G.cur !== 'live' || !this.L) return;
-    if (this.menu) { if (down) this.menu(e); e.preventDefault(); e.stopPropagation(); return; }
+    if (this.menu) {
+      if (down) this.menu(e);
+      else { const l = LANE_CODE[e.code]; if (l !== undefined) { this.R.press(l, false); this.L.release(l, e.timeStamp || performance.now()); } }
+      e.preventDefault(); e.stopPropagation(); return;
+    }
     const L = this.L;
     if (down && (e.code === 'Escape' || e.code === 'KeyP')) { e.preventDefault(); e.stopPropagation(); if (!L.finished) this.pauseMenu(); return; }
     let lane = LANE_CODE[e.code];
@@ -405,41 +439,85 @@ scene('live', {
 });
 
 /* ================= RESULT ================= */
+/* shapes → big type → data → the band; commands in the main-menu grammar. Red only on the chosen command. */
+const RCMD = [['RETRY', '같은 곡을 처음부터 다시'], ['NEXT', '다음으로']];
 scene('result', {
-  cls: 'rs', back: false,
-  html: `<div class="band"></div>
-    <div class="en">LIVE RESULT</div>
-    <div class="big" aria-label="爆音"><span class="a">爆音</span><span class="b" aria-hidden="true">爆音</span><span class="c" aria-hidden="true">爆音</span></div>
-    <div class="rank">S<small>RANK</small></div>
-    <div class="stats"><div class="songn"></div><div class="sc">0</div><dl></dl></div>
-    <div class="members"></div>
-    <div class="rs-badge"></div>
-    <div class="btns"><span class="btn w"><span class="unskew">재도전</span></span><span class="btn p"><span class="unskew">다음 ▶</span></span></div>`,
-  init(el) { this.Lst = List($$('.btn', el), { start: 1, onPick: n => this.pick(n) }); },
+  cls: 'rs2', back: false,
+  html: `<div class="water"></div><div class="word" aria-hidden="true">RESULT</div>
+    <div class="band"></div><div class="st1"></div><div class="st2"></div>
+    <div class="jk"></div>
+    <div class="hd"><span class="ey">LIVE RESULT</span><b class="tt"></b><div class="mt"><span class="rs-band">SIGNAL LOST</span><span class="rs-part"></span><span class="rs-diff"></span></div></div>
+    <div class="rk2"><small>RANK</small><div class="lt"><span class="p1"></span><span class="p2"></span><span class="p0"></span></div></div>
+    <div class="badge"></div>
+    <div class="panel"><div class="sc-h"><span>SCORE</span><em class="rs-sub"></em></div><div class="sc-v">0</div><div class="jr"></div><div class="rst"></div></div>
+    <div class="bd-l">ON STAGE</div>
+    <div class="rmbs"></div>
+    <div class="rmenu">${RCMD.map(([t]) => `<span>${t}</span>`).join('')}</div>
+    <div class="rcmd"><span class="rcmd-t"></span><small>COMMAND · ↑↓ 고르기 · Z 결정</small></div>
+    <div class="flash"></div>`,
+  init(el) {
+    this.Lst = List($$('.rmenu span', el), {
+      jolt: $('.rmenu', el), start: 1,
+      onChange: n => { const c = $('.rcmd-t', el); c.textContent = RCMD[n][1]; A(c, KF.fromRight('8%'), T.slam); },
+      onPick: n => this.pick(n),
+    });
+  },
   enter(a) {
-    a = a || { r: { score: 912340, rank: 'A', counts: [612, 41, 6, 2], maxCombo: 488, sync: 88, heat: 72, cover: { hit: 3, total: 4 }, eyes: { hit: 2, total: 3 }, fast: 20, slow: 27 }, song: SONGS[0], part: 'GT', diff: 1, party: [] };
+    a = a || { r: { score: 962410, rank: 'S', counts: [612, 41, 6, 2], maxCombo: 488, sync: 88, heat: 72, cover: { hit: 3, total: 4 }, eyes: { hit: 2, total: 3 }, fast: 20, slow: 27 }, song: SONGS[0], part: 'GT', diff: 1, party: [] };
     this.a = a;
-    const el = this.el, r = a.r;
-    $('.songn', el).textContent = `${a.song.title} · ${a.part} ${DIFFS[a.diff]}`;
-    $('.rank', el).firstChild.textContent = r.rank;
-    $('.rank', el).dataset.r = r.rank;
-    $('.big', el).hidden = r.failed;
-    $('dl', el).innerHTML = [['PERFECT', r.counts[0], 'pf'], ['GREAT', r.counts[1]], ['GOOD', r.counts[2]], ['MISS', r.counts[3], 'ms'], ['MAX COMBO', r.maxCombo], ['FAST / SLOW', `${r.fast} / ${r.slow}`], ['BAND SYNC', r.sync + '%'], ['COVER', `${r.cover.hit}/${r.cover.total}`], ['EYE CONTACT', `${r.eyes.hit}/${r.eyes.total}`]]
-      .map(([k, v, c]) => `<dt${c ? ` class="${c}"` : ''}>${k}</dt><dd>${v}</dd>`).join('');
-    $('.members', el).innerHTML = (a.party || []).map(m => `<div class="mb" style="--c:${m.c}"><i>${m.icon ? `<img src="${m.icon}" alt="">` : ''}</i>${m.en}</div>`).join('');
-    $('.rs-badge', el).textContent = r.failed ? 'SILENCE' : r.ap ? 'ALL PERFECT' : r.fc ? 'FULL COMBO' : 'CLEAR';
-    $('.rs-badge', el).dataset.k = r.failed ? 'f' : r.fc ? 'fc' : 'c';
-    this.Lst.set(1, true);
-    A($('.band', el), [{ scale: '0 1' }, { scale: '1 1' }], T.slam);
-    $$('.big span', el).forEach((s, i) => A(s, [{ translate: '-30% 0', opacity: 0 }, { translate: '0 0', opacity: 1 }], T.slam, { delay: 100 + i * 50 }));
-    A($('.en', el), KF.fromLeft('-30%'), T.slam, { delay: 60 });
-    A($('.rank', el), KF.stamp, T.pop * 1.6, { delay: 900, e: EZ.pop });
-    A($('.rs-badge', el), KF.stamp, T.pop * 1.4, { delay: 1150, e: EZ.pop });
-    A($('.stats', el), KF.fromRight('40%'), T.slam, { delay: 260 });
-    later(() => countUp($('.sc', el), r.score, 800), 300);
-    stagger($$('.stats dt, .stats dd', el), KF.fade, 80, 420, 16);
-    stagger($$('.mb', el), KF.popIn, T.pop, 600, 50, { e: EZ.pop });
-    stagger($$('.btn', el), KF.fromRight('60%'), T.slam, 950, 40);
+    const el = this.el, r = a.r, q = x => $(x, el), qa = x => $$(x, el);
+    const total = r.counts.reduce((x, y) => x + y, 0) || 1;
+    el.getAnimations({ subtree: true }).forEach(x => x.cancel());
+    q('.jk').style.backgroundImage = `url(${a.song.jk || 'img/jk/47.webp'})`;
+    q('.tt').textContent = a.song.title;
+    q('.rs-part').textContent = (INST_INFO[a.part] || INST_INFO.GT).en; q('.rs-diff').textContent = DIFFS[a.diff];
+    q('.rs-band').textContent = a.back && a.back.party === 'band' ? 'NEW BAND' : 'SIGNAL LOST';
+    q('.rs-sub').textContent = r.failed ? '공연 중단' : `${r.counts[0]} PERFECT`;
+    const rank = q('.rk2'); rank.dataset.r = r.rank; rank.dataset.l = r.rank.length; rank.classList.remove('shine');
+    qa('.lt span').forEach(sp => { sp.textContent = r.rank; });
+    const bd = q('.badge'); bd.textContent = r.failed ? 'SILENCE' : r.ap ? 'ALL PERFECT' : r.fc ? 'FULL COMBO' : 'CLEAR'; bd.dataset.k = r.failed ? 'f' : r.ap ? 'ap' : r.fc ? 'fc' : 'c';
+    q('.jr').innerHTML = JN.map((k, i) => `<div class="jrow" data-k="${i}"><b>${k}</b><div class="jbar"><i style="--w:${(r.counts[i] / total * 100).toFixed(1)}%"></i></div><span class="n">${r.counts[i]}</span></div>`).join('');
+    q('.rst').innerHTML = [['MAX COMBO', r.maxCombo], ['FAST / SLOW', `${r.fast}<small> / </small>${r.slow}`], ['BAND SYNC', `${r.sync}<small>%</small>`], ['COVER', `${r.cover.hit}<small> / ${r.cover.total}</small>`], ['EYE CONTACT', `${r.eyes.hit}<small> / ${r.eyes.total}</small>`], ['CROWD HEAT', r.heat]].map(([k, v]) => `<div><span>${k}</span><b>${v}</b></div>`).join('');
+    const face = m => m.icon ? `<img src="${m.icon}" alt="">` : '<i class="sil"></i>';
+    q('.rmbs').innerHTML = `<div class="rmb" style="--c:#4FE3FF"><div class="av"><img src="${icon('you')}" alt=""></div><div class="in"><b>${G.name || 'YOU'}</b><small>${a.part} · VO</small></div></div>` +
+      (a.party || []).map(m => `<div class="rmb" style="--c:${m.c}"><div class="av">${face(m)}</div><div class="in"><b>${m.en}</b><small>${m.part}</small></div></div>`).join('');
+    this.Lst.set(1, true); q('.rcmd-t').textContent = RCMD[1][1];
+    // 1. shapes
+    A(q('.band'), [{ clipPath: 'inset(0 100% 0 0)' }, { clipPath: 'inset(0 0 0 0)' }], T.wipe, { e: EZ.wipe });
+    A(q('.st1'), [{ translate: '-110% 0' }, { translate: '0 0' }], T.slam, { delay: 80 });
+    A(q('.st2'), [{ translate: '110% 0' }, { translate: '0 0' }], T.slam, { delay: 140 });
+    A(q('.word'), [{ translate: '30% 0', opacity: 0 }, { translate: '0 0', opacity: 1 }], 900, { delay: 120, e: EZ.soft });
+    // 2. big type
+    A(q('.jk'), [{ translate: '-60px -40px', rotate: '-22deg', opacity: 0 }, { translate: '0 0', rotate: '-5deg', opacity: 1 }], 520, { delay: 200, e: EZ.pop });
+    A(q('.hd .ey'), KF.fromLeft('-30px'), T.slam, { delay: 260 });
+    A(q('.hd .tt'), [{ clipPath: 'inset(0 100% 0 0)', translate: '-20px 0' }, { clipPath: 'inset(0 0 0 0)', translate: '0 0' }], T.wipe, { delay: 300 });
+    stagger(qa('.hd .mt span'), KF.fromBottom('12px'), T.slam, 420);
+    // 3. data
+    A(q('.panel'), KF.fromRight('80px'), T.wipe, { delay: 380 });
+    later(() => countUp(q('.sc-v'), r.score, 900), 520);
+    qa('.jrow').forEach((row, i) => {
+      A(row, KF.fromRight('40px'), T.slam, { delay: 620 + i * 60 });
+      A($('.jbar i', row), KF.scaleX, 620, { delay: 700 + i * 60 });
+    });
+    stagger(qa('.rst div'), KF.fromBottom('14px'), T.slam, 900);
+    // the rank lands: plates slide in, the letter stamps, the stage flashes and jolts
+    const RK = 1500;
+    A(q('.rk2 small'), KF.fade, 200, { delay: RK - 150 });
+    A(q('.lt .p1'), [{ translate: '-140px -10px', opacity: 0 }, { translate: '-14px -10px', opacity: 1 }], T.slam, { delay: RK });
+    A(q('.lt .p2'), [{ translate: '160px 14px', opacity: 0 }, { translate: '18px 14px', opacity: 1 }], T.slam, { delay: RK + 60 });
+    A(q('.lt .p0'), [{ scale: '2.4', opacity: 0, filter: 'blur(6px)' }, { scale: '.94', opacity: 1, filter: 'blur(0)', offset: .7 }, { scale: '1', opacity: 1, filter: 'blur(0)' }], 360, { delay: RK + 140 });
+    A(q('.flash'), [{ opacity: 0 }, { opacity: r.failed ? .12 : .45, offset: .15 }, { opacity: 0 }], T.wipe, { delay: RK + 360, e: EZ.lin });
+    A(q('.s') || el.firstElementChild, [{ translate: '0 0' }, { translate: '-6px 4px' }, { translate: '5px -3px' }, { translate: '0 0' }], 220, { delay: RK + 360, e: EZ.lin });
+    A(bd, [{ scale: '2', opacity: 0, rotate: '-14deg' }, { scale: '1', opacity: 1, rotate: '0deg' }], T.slam, { delay: RK + 620, e: EZ.pop });
+    if (!r.failed) later(() => rank.classList.add('shine'), RK + 700);
+    // 4. the band, last and slowest; then the commands
+    A(q('.bd-l'), KF.fade, T.slam, { delay: RK + 700 });
+    stagger(qa('.rmb'), KF.fromBottom('60px'), T.char, RK + 760, 70);
+    stagger(qa('.rmenu span'), KF.fromRight('35%'), T.char, RK + 1000, T.step);
+    const sel = this.Lst.el;
+    A(sel, KF.scaleX, T.pop, { delay: RK + 1300, pe: '::before', e: EZ.pop });
+    A(sel, KF.scaleX, T.pop, { delay: RK + 1340, pe: '::after', e: EZ.pop });
+    A(q('.rcmd'), KF.fromRight('30%'), T.char, { delay: RK + 1150 });
   },
   pick(n) {
     const a = this.a;
@@ -448,8 +526,10 @@ scene('result', {
     go('lab', { via: 'sweepBack', push: false });
   },
   key(k) {
-    if (k === 'left') this.Lst.move(-1); else if (k === 'right') this.Lst.move(1);
-    else if (k === 'ok') this.pick(this.Lst.i); else if (k === 'back') this.pick(1);
+    if (k === 'up' || k === 'left') this.Lst.move(-1);
+    else if (k === 'down' || k === 'right') this.Lst.move(1);
+    else if (k === 'ok') this.pick(this.Lst.i);
+    else if (k === 'back') this.pick(1);
     return true;
   },
 });
