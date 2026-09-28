@@ -162,10 +162,18 @@ scene('title', {
 const slotOf = () => {
   if (!SAVE.progress || !SAVE.profile) return null;
   const g = SAVE.game, yr = SAVE.progress.story === 'year';
+  if (g && g.v === 2 && typeof dateOf === 'function') {
+    const t = dateOf(g.day), ch = typeof curCh === 'function' ? curCh() : 1, c = typeof CH !== 'undefined' && CH[ch];
+    return {
+      date: `${t.m}/${t.d}`, dow: DOW_EN[t.dow], time: isWeekend(g.day) ? '낮' : '저녁', moon: 'half', place: '나기사카', bg: c ? c.bg : 'stage',
+      ch: `${ch}장 ${c ? c.name : ''} · 팬 ${g.fans.toLocaleString('en-US')} · ¥${g.money.toLocaleString('en-US')}`, lv: ch, play: new Date(SAVE.progress.t || Date.now()).toLocaleDateString('ko-KR'),
+      band: `${g.bandName || '0dB 알바'} · ${SAVE.profile.name}`, faces: ['you', ...g.joined],
+    };
+  }
   return g ? {
-    date: '4월', dow: `${g.week}주`, time: g.phase === 'weekend' || g.phase === 'end' ? '주말' : '평일', moon: 'half', place: '나기사카 · 0dB', bg: 'stage',
-    ch: `1장 제로 데시벨 · ¥${g.money.toLocaleString('en-US')}`, lv: 1, play: new Date(SAVE.progress.t || Date.now()).toLocaleDateString('ko-KR'),
-    band: `0dB 알바 · ${SAVE.profile.name}`, faces: ['you', ...Object.keys(g.met).filter(id => id !== 'koto')],
+    date: '4월', dow: `${g.week || 1}주`, time: '평일', moon: 'half', place: '나기사카 · 0dB', bg: 'stage',
+    ch: `1장 제로 데시벨 · ¥${(g.money || 0).toLocaleString('en-US')}`, lv: 1, play: new Date(SAVE.progress.t || Date.now()).toLocaleDateString('ko-KR'),
+    band: `0dB 알바 · ${SAVE.profile.name}`, faces: ['you'],
   } : {
     date: yr ? '1년 후' : '1년 전', dow: yr ? 'APR' : 'SUN', time: yr ? '밤' : '저녁', moon: 'full', place: yr ? '나기사카' : '블루 아워 페스', bg: yr ? 'river_night' : 'backstage',
     ch: yr ? '1년 후' : SAVE.progress.done ? '프롤로그 · 완료' : '프롤로그 · 47초', lv: 1, play: new Date(SAVE.progress.t || Date.now()).toLocaleDateString('ko-KR'),
@@ -374,12 +382,12 @@ scene('adv', {
   },
   enter(arg) {
     const o = arg && typeof arg === 'object' ? arg : {};
-    this.script = o.script || SCRIPT || S_ARRIVE; this.next2 = o.next || null;
+    this.script = o.script || SCRIPT || S_CALL; this.next2 = o.next || null; this.abort = o.abort || null;
     $('.adv-img', this.el).style.backgroundImage = `url(img/bg/${o.bg || 'backstage'}.webp)`;
     $('.adv-place', this.el).innerHTML = o.place || '<b>0dB</b> 백스테이지 · 밤';
     const dc = $('.datechip', this.el); if (o.date && dc) { const t = document.createElement('div'); t.innerHTML = o.date; dc.replaceWith(t.firstElementChild); }
     this.el.classList.remove('fx-blur');
-    this.i = typeof arg === 'number' ? arg : 0; this.pick = 0; this.log = []; this.auto = false; this.choosing = false; this.speaking = null;
+    this.i = typeof arg === 'number' ? arg : 0; this.pick = 0; this.ended = false; this.log = []; this.auto = false; this.choosing = false; this.speaking = null;
     const el = this.el;
     $('.adv-ch', el).hidden = true;
     $$('.adv-ctrl span', el).forEach(s => s.classList.remove('on'));
@@ -393,8 +401,11 @@ scene('adv', {
   },
   leave() { clearInterval(this.tw); },
   line() { return this.script[this.i]; },
+  /* lines can depend on the save: { if: g => ... } is skipped when false (g = SAVE.game, pick = the last choice) */
+  skipIf() { let ln; while ((ln = this.script[this.i]) && ln.if && !ln.if(SAVE.game || {}, this.pick)) this.i++; },
   /* shape the empty box for the first line before it slides in, so it never flashes a face slot it won't use */
   prime() {
+    this.skipIf();
     const el = this.el, ln = this.line() || {}, box = $('.adv-box', el), meta = SPEAKER[ln.who] || {};
     el.dataset.side = !ln.ch ? 'N' : FACING[ln.ch] === 'l' ? 'R' : 'L';
     $('.adv-face', el).hidden = !meta.face;
@@ -408,8 +419,10 @@ scene('adv', {
     this.speaking = null;
   },
   show() {
+    this.skipIf();
     const el = this.el, ln = this.line();
     if (!ln) return this.end();
+    if (ln.eff && !ln.choice && typeof applyEff === 'function') applyEff(ln.eff);   // a line that changes something as it plays
     const ch = $('.adv-ch', el);
     const side = !ln.ch ? 'N' : FACING[ln.ch] === 'l' ? 'R' : 'L';   // N = narration: centred box, no portrait
     if (el.dataset.side !== side) { el.dataset.side = side; if (side === 'N') ch.hidden = true; }
@@ -449,7 +462,7 @@ scene('adv', {
     box.classList.toggle('me', ln.who === '@NAME');
     box.classList.toggle('talk', !!ln.ch && ln.who !== '@NAME');
     box.classList.toggle('narr', !ln.who);
-    const text = (Array.isArray(ln.text) ? ln.text[this.pick] : ln.text).replace(/@NAME/g, G.name);
+    const text = (Array.isArray(ln.text) ? ln.text[this.pick] : ln.text).replace(/@NAME/g, G.name).replace(/@BAND/g, (SAVE.game && SAVE.game.bandName) || 'RE:AMP');
     this.log.push({ who, text });
     const t = $('.adv-text', el);
     t.textContent = '';
@@ -470,10 +483,12 @@ scene('adv', {
   openChoice(opts) {
     this.choosing = true; this.picked = false;
     const box = $('.adv-choices', this.el);
-    box.innerHTML = opts.map((o, i) => `<span class="adv-opt"><b>${'ABC'[i]}</b>${o}</span>`).join('');
+    const ln = this.line(), g = SAVE.game || {};
+    this.off = opts.map((o, i) => !!(ln.need && ln.need[i] && !ln.need[i](g)));   // options the player can't take yet: shown, greyed, with why
+    box.innerHTML = opts.map((o, i) => `<span class="adv-opt${this.off[i] ? ' off' : ''}"><b>${'ABCDE'[i]}</b>${o}${this.off[i] && ln.needT && ln.needT[i] ? `<small>${ln.needT[i]}</small>` : ''}</span>`).join('');
     const items = $$('.adv-opt', box);
     stagger(items, KF.fromRight('30%'), T.char, 0, 90);
-    this.CL = List(items, { onPick: n => this.choose(n), jolt: box });
+    this.CL = List(items, { onPick: n => this.choose(n), jolt: box, start: Math.max(0, this.off.indexOf(false)) });   // the cursor starts on an option you can take
     A(this.CL.el, KF.scaleX, T.pop, { delay: 350, pe: '::before', e: EZ.pop });
     A($('.adv-box', this.el), [{ opacity: 1 }, { opacity: .35 }], T.slam, { fill: 'forwards' });
   },
@@ -486,6 +501,7 @@ scene('adv', {
   },
   choose(n) {
     if (this.picked) return;                        // a second press while the choice plays out must not count twice
+    if (this.off && this.off[n]) { shake(this.CL.items[n]); return; }
     this.picked = true;
     const eff = this.line().eff;
     if (eff && eff[n] && typeof applyEff === 'function') applyEff(eff[n]);
@@ -498,6 +514,8 @@ scene('adv', {
     later(() => { box.innerHTML = ''; this.choosing = false; $('.adv-box', this.el).getAnimations().forEach(a => a.cancel()); this.next(); }, 700);
   },
   end() {
+    if (this.ended) return;                         // a double press on the last line must not run what comes next twice
+    this.ended = true;
     clearInterval(this.tw);
     if (this.next2) return this.next2();
     later(() => { G.stack = []; go('title', { push: false }); }, 600);
@@ -517,15 +535,18 @@ scene('adv', {
     pop(btn);
     if (c === 'auto') { this.auto = !this.auto; btn.classList.toggle('on', this.auto); if (this.auto && !this.typing && !this.choosing) this.next(); }
     else if (c === 'skip') {
-      while (this.script[this.i + 1] && !this.script[this.i + 1].choice && !this.choosing) { this.i++; const l = this.script[this.i]; this.log.push({ who: l.who === '@NAME' ? G.name : l.who, text: Array.isArray(l.text) ? l.text[this.pick] : l.text }); }
+      while (this.script[this.i + 1] && !this.script[this.i + 1].choice && !this.choosing) { this.i++; const l = this.script[this.i]; if (l.if && !l.if(SAVE.game || {}, this.pick)) continue; if (l.eff && typeof applyEff === 'function') applyEff(l.eff); this.log.push({ who: l.who === '@NAME' ? G.name : l.who, text: Array.isArray(l.text) ? l.text[this.pick] : l.text }); }
       if (!this.choosing) this.next();
     } else if (c === 'log') this.openLog();
-    else if (c === 'menu') confirmBox('타이틀로 갈까요?', '이 장면은 처음부터 다시 시작해요.', () => { G.stack = []; go('title', { push: false }); });
+    else if (c === 'menu') {
+      if (this.abort) confirmBox('여기서 그만둘까요?', '이 이야기는 처음부터 다시 봐야 해요. 지금까지 고른 선택은 없던 일이 돼요.', () => this.abort());
+      else confirmBox('타이틀로 갈까요?', '이 장면은 처음부터 다시 시작해요.', () => { G.stack = []; go('title', { push: false }); });
+    }
   },
   openLog() {
     const el = document.createElement('div');
     el.className = 'backlog';
-    el.innerHTML = `<div class="bl-dim"></div><div class="bl-word">LOG</div><div class="bl-date"><b>${SAVE.game ? `4월 ${SAVE.game.week}주` : '1년 전'}</b>${SAVE.game ? '나기사카' : '블루 아워 페스'}</div>
+    el.innerHTML = `<div class="bl-dim"></div><div class="bl-word">LOG</div><div class="bl-date"><b>${SAVE.game ? dateKo(SAVE.game.day) : '1년 전'}</b>${SAVE.game ? '나기사카' : '블루 아워 페스'}</div>
       <div class="bl-list">${this.log.map(l => `<div class="bl-row${l.who === G.name ? ' me' : ''}"><b>${l.who}</b><span>${l.text}</span></div>`).join('')}</div>
       <div class="bl-hint">↕ 스크롤 · X 닫기</div>`;
     overlayRoot.appendChild(el);

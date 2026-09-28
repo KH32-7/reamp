@@ -7,12 +7,12 @@
 'use strict';
 const fs = require('fs'), path = require('path');
 const ROOT = path.join(__dirname, '..');
-const FILES = ['js/week.js', 'js/story.js', 'js/scenes-after.js', 'js/lines.js'];
+const FILES = ['js/week.js', 'js/story.js', 'js/scenes-after.js', 'js/episodes.js', 'js/ch1.js', 'js/ch2.js', 'js/ch3.js', 'js/town.js', 'js/lines.js'];
 
 function load() {
   const noop = new Proxy(function () {}, { get: (t, k) => k === Symbol.toPrimitive ? () => '' : noop, apply: () => noop, construct: () => noop });
   const real = { eval: globalThis.eval, Object, Array, JSON, Math, String, Number, Boolean, RegExp, Date, Map, Set, Promise, console, Symbol, Error, parseInt, parseFloat, isNaN, Infinity, NaN, undefined };
-  const sandbox = new Proxy({ SPEAKER: {}, STORY_EXTRA: {} }, {
+  const sandbox = new Proxy({ SPEAKER: {}, STORY_EXTRA: {}, MEMBERS: [] }, {
     has: () => true,
     get: (t, k) => k in t ? t[k] : k in real ? real[k] : k === Symbol.unscopables ? undefined : noop,
     set: (t, k, v) => { t[k] = v; return true; },

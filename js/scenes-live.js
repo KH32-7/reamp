@@ -71,6 +71,7 @@ function scenarioEvents(sc, prep, part) {
     ];
   }
   if (sc === 'practice') return [{ type: 'tip', bar: -.5, text: '연습이라 <b>실패는 없어요</b>. 편하게 쳐 보세요.', dur: 5 }];
+  if (sc === 'solo') return [];
   // lab: an eye contact every 16 bars, rotating through the band
   return [0, 1, 2, 3].map(k => ({ type: 'eye', who: null, bar: 8 + k * 16, bars: 1, k }));
 }
@@ -151,13 +152,13 @@ scene('live', {
     this.prep = prep;
     // party + events
     const pk = arg.party || (arg.scenario === 'lab' ? 'band' : 'signal');
-    const party = pk === 'solo' ? [] : pk === 'band' ? bandParty(part) : signalParty(part);
+    const party = Array.isArray(pk) ? pk : pk === 'solo' ? [] : pk === 'band' ? bandParty(part) : signalParty(part);   // v2 passes the real band
     let events = arg.events || scenarioEvents(arg.scenario || 'lab', prep, part);
-    events = events.map(e => e.who === null ? { ...e, who: party[e.k % party.length].id } : e);
+    events = events.filter(e => e.who !== null || party.length).map(e => e.who === null ? { ...e, who: party[e.k % party.length].id } : e);
     const L = this.L = new Live({
       prep, part, diff, party, events, seed: arg.seed,
       noFail: SETTINGS.noFail || arg.noFail || arg.scenario === 'incident',          // the 47 seconds can't be failed tutorial: arg.scenario === 'tutorial',
-      randomFumbles: arg.scenario === 'lab', auto: arg.auto, heat0: arg.heat0, until,
+      randomFumbles: arg.scenario === 'lab' || !!arg.fumbles, auto: arg.auto, heat0: arg.heat0, until,
       from: arg.from || (arg.scenario === 'incident' ? song.v2 || 0 : 0),
       on: (t, d) => this.ev(t, d),
     });
@@ -386,7 +387,7 @@ scene('live', {
 
   renderParty() {
     const L = this.L;
-    $('.lv-party', this.el).innerHTML = `<span class="lead">${this.arg.party === 'solo' ? 'SOLO' : this.arg.scenario === 'lab' && this.arg.party === 'band' ? 'BAND' : 'SIGNAL LOST'}</span>` +
+    $('.lv-party', this.el).innerHTML = `<span class="lead">${this.arg.label || (this.arg.party === 'solo' ? 'SOLO' : this.arg.scenario === 'lab' && this.arg.party === 'band' ? 'BAND' : 'SIGNAL LOST')}</span>` +
       `<div class="lv-prow you" style="--c:#4FE3FF"><div class="av"><img src="${icon('you')}" alt=""></div><div class="in"><div class="nm">${G.name || 'YOU'}<small>${this.part} · VO</small></div></div></div>` +
       L.members.map(m => `<div class="lv-prow${m.blur ? ' blur' : ''}" data-id="${m.id}" style="--c:${m.c}"><div class="av">${m.icon ? `<img src="${m.icon}" alt="">` : '<i class="sil"></i>'}</div><div class="in"><div class="nm">${m.en}<small>${m.part}</small></div></div><span class="st">ON AIR</span></div>`).join('');
   },
@@ -526,7 +527,7 @@ scene('live', {
     const el = document.createElement('div');
     el.className = 'pause';
     const vo = () => `보컬 ${SETTINGS.vocals ? 'ON' : 'OFF'}`;
-    const items = ['계속하기', '처음부터', `노트 속도 ×${SETTINGS.speed.toFixed(1)}`, vo(), this.arg.story ? '타이틀로' : 'RHYTHM LAB으로'];
+    const items = ['계속하기', '처음부터', `노트 속도 ×${SETTINGS.speed.toFixed(1)}`, vo(), this.arg.quitTo === 'setlist' ? '곡 선택으로' : this.arg.quitTo ? '그만두기' : this.arg.story ? '타이틀로' : 'RHYTHM LAB으로'];
     el.innerHTML = `<div class="ps-dim"></div><div class="ps-title">PAUSE</div><div class="ps-list">${items.map(t => `<span>${t}</span>`).join('')}</div><div class="ps-song">${this.prep.song.title} · ${DIFFS[L.diff]} · ${this.part}</div>`;
     overlayRoot.appendChild(el);
     A($('.ps-dim', el), KF.fade, T.slam); A($('.ps-title', el), KF.fromLeft('-60%'), T.slam);
@@ -554,7 +555,12 @@ scene('live', {
     step();
   },
   restart(o = {}) { const a = { ...this.arg, ...o }; this.L = null; swap('live', a); },
-  quit() { this.L = null; if (this.arg.story) { G.stack = []; go('title', { push: false }); } else go('lab', { via: 'sweepBack', push: false }); },
+  quit() {
+    this.L = null;
+    if (this.arg.quitTo === 'episodes') return EPR.abort();          // a story live: back to the map, the episode undone
+    if (this.arg.quitTo) { G.stack = []; return go(this.arg.quitTo, { via: 'sweepBack', push: false }); }
+    if (this.arg.story) { G.stack = []; go('title', { push: false }); } else go('lab', { via: 'sweepBack', push: false });
+  },
   failMenu() {
     const f = $('.lv-fail', this.el);
     f.hidden = false;
@@ -619,7 +625,7 @@ scene('result', {
     q('.jk').style.backgroundImage = `url(${a.song.jk || 'img/jk/47.webp'})`;
     q('.tt').textContent = a.song.title;
     q('.rs-part').textContent = (INST_INFO[a.part] || INST_INFO.GT).en; q('.rs-diff').textContent = DIFFS[a.diff];
-    q('.rs-band').textContent = a.back && a.back.party === 'solo' ? 'SOLO PRACTICE' : a.back && a.back.party === 'band' ? 'NEW BAND' : 'SIGNAL LOST';
+    q('.rs-band').textContent = a.back && a.back.label ? a.back.label : a.back && a.back.party === 'solo' ? 'SOLO PRACTICE' : a.back && a.back.party === 'band' ? 'NEW BAND' : 'SIGNAL LOST';
     q('.rs-sub').textContent = r.failed ? '공연 중단' : `${r.counts[0]} PERFECT`;
     const rank = q('.rk2'); rank.dataset.r = r.rank; rank.dataset.l = r.rank.length; rank.classList.remove('shine');
     qa('.lt span').forEach(sp => { sp.textContent = r.rank; });

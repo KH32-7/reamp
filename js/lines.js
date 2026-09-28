@@ -7,20 +7,17 @@
    portrait/expression carried over). Removing: write (삭제) in 대사. Choices and title cards can only be edited. */
 'use strict';
 
-const LINE_SCRIPTS = {
-  GREENROOM: '프롤로그 · 대기실', S_CALL: '1년 후 · 걸려 온 전화', S_ARRIVE: '1장 · 0dB 첫 출근',
-  S_WORK: '1주차 · 0dB 알바', S_STUDIO: '1주차 · 스튜디오 연습', S_STUDIO_AFTER: '1주차 · 연습 끝',
-  S_REN: '1주차 · 멘야 도돈 (렌)', S_NATSU: '1주차 · 헌옷가게 (나츠)', S_REI: '1주차 · 레코드샵 (레이)',
-  S_REST: '1주차 · 강변 산책', S_WEEKEND: '1주차 · 주말', AFTER47: '47초 이후 컷신',
-};
+const LINE_SCRIPTS = { GREENROOM: '프롤로그 · 대기실', S_CALL: '1년 후 · 걸려 온 전화', AFTER47: '47초 이후 컷신' };
+/* v2: every episode, town event, small talk and gift reaction registers itself with S() (week.js) into SCRIPTS */
 const AF_SHOT_KO = { phone: '그날 밤 휴대폰', ear: '청력 검사', news: '하루 계약 기사', chat: '단톡방', closet: '옷장' };
 const AF_KIND_KO = { place: '장소 표시', clock: '시계', date: '날짜', noti: '알림', cap: '자막', ui: '화면 문구', stamp: '도장', site: '사이트 이름', tag: '분류', head: '제목', lede: '본문', photo: '사진 설명', cmt: '댓글', word: '화면을 덮는 말', title: '방 이름', old: '예전 메시지', day: '날짜 구분', msg: '메시지', type: '입력했다 지우는 말', sys: '시스템 메시지', sticker: '스티커' };
 
 /* every editable cell: { key, scene, who, text, set(text, who), arr, idx (the script line it belongs to) } */
 function lineCells() {
   const out = [];
-  for (const [name, label] of Object.entries(LINE_SCRIPTS)) {
-    let arr = null; try { arr = eval(name); } catch (e) {}   // top-level consts aren't on window
+  const all = Object.entries(LINE_SCRIPTS).map(([name, label]) => { let arr = null; try { arr = eval(name); } catch (e) {} return [name, label, arr]; })   // top-level consts aren't on window
+    .concat(typeof SCRIPTS === 'object' ? Object.entries(SCRIPTS).map(([name, v]) => [name, v.label, v.arr]) : []);
+  for (const [name, label, arr] of all) {
     if (!Array.isArray(arr)) continue;
     arr.forEach((e, i) => {
       const scene = name === 'AFTER47' ? `${label} · ${AF_SHOT_KO[e.shot] || e.shot} · ${AF_KIND_KO[e.kind] || e.kind}` : label;

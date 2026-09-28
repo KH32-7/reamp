@@ -28,8 +28,8 @@ const STORY = {
     { card: ['ONE YEAR LATER', '1년 후', '4월 · 나기사카'] },
     { adv: S_CALL, bg: 'river_night', place: '<b>나기사카</b> 강변 둑길 · 밤', date: '<div class="datechip"><b>4월</b><span>1년 후<small>밤</small></span><i class="moon"></i><em>SPRING</em></div>' },
     { op: true },
-    { card: ['CHAPTER 1', '제로 데시벨', '4월 1주 · 오픈 마이크까지 2주'], long: true },
-    { week: true },
+    { card: ['CHAPTER 1', '제로 데시벨', '4월 · 오픈 마이크까지 2주'], long: true },
+    { v2: true },
   ],
   prologue: [
     { adv: GREENROOM, bg: 'backstage', place: '<b>블루 아워 페스</b> 서브 스테이지 대기실', date: '<div class="datechip past"><b>1년 전</b><span>SUN<small>저녁</small></span><i class="moon"></i><em>SIGNAL LOST</em></div>' },
@@ -42,11 +42,15 @@ const STORY = {
 };
 
 const Story = {
-  id: null, i: 0,
-  start(id, step = 0) { this.id = id; this.i = step; G.stack = []; this.run(); },
+  id: null, i: 0, replay: false,
+  start(id, step = 0) { this.id = id; this.i = step; this.replay = false; G.stack = []; this.run(); },
+  /* the prologue again from STORY, without touching where the save is */
+  replayStart(id) { this.id = id; this.i = 0; this.replay = true; G.stack = []; this.run(); },
   run() {
     const steps = STORY[this.id], st = steps[this.i];
-    SAVE.progress = { story: this.id, step: this.i, t: Date.now() }; writeSave();
+    if (this.replay) {
+      if (!st) { this.replay = false; G.stack = []; return go('chapter', { via: 'fade', push: false }); }
+    } else SAVE.progress = { story: this.id, step: this.i, t: Date.now() }, writeSave();
     if (!st) {
       if (this.id === 'prologue') { SAVE.progress = { story: 'prologue', step: 0, done: true }; writeSave(); return this.start('year'); }
       SAVE.progress = { story: this.id, step: 0, done: true }; writeSave(); G.stack = []; return go('menu', { via: 'ink', push: false });
@@ -56,7 +60,10 @@ const Story = {
     else if (st.card) go('card', { via: 'fade', push: false, arg: { lines: st.card, long: st.long, next } });
     else if (st.op) go('op0', { via: 'cut', push: false, arg: { next } });
     else if (st.cut) go(st.cut, { via: 'fade', push: false, arg: { next } });
-    else if (st.week) { W.init(); SAVE.progress = { story: this.id, step: this.i, done: true }; writeSave(); W.resume(); }
+    else if (st.v2) {                               // chapter 1 opens: the first episode, then its branch map
+      W.init(); SAVE.progress = { story: this.id, step: this.i, done: true }; writeSave();
+      if (!W.cleared('1-1')) EPR.run('1-1'); else go('episodes', { via: 'fade', push: false, arg: 1 });
+    }
     else if (st.live) go('live', { via: 'slam', push: false, arg: { ...st.live, part: G.inst, diff: G.diff ?? 1, party: 'signal', story: this.id, next } });
   },
 };

@@ -15,19 +15,34 @@ const MEMBERS = [
 const hearts = lv => '♥'.repeat(lv) + '♡'.repeat(5 - lv);
 const STAGES = ['', '밴드 동료', '친구', '신경 쓰이는 사이', '특별한 사람', '듀엣'];
 
-/* ---------------- MAIN MENU ----------------
-   What this build can reach: TODAY replays the prologue, PRACTICE is the Rhythm Lab, BAND is the stage plot.
-   The other entries stay on the menu so it reads whole, and say they're on the way. */
+/* ---------------- MAIN MENU (v2) ----------------
+   STORY: chapters and episodes · LIVE: songs, fans, SYNC · TOWN: people, events, gifts · BAND · SHOP.
+   PULSE and FILE stay on the menu so it reads whole, and say they're on the way. */
 const MENU_BASE = [
-  { t: 'TODAY', h: '', go: 'today', fs: 2.9, ml: .4 },
-  { t: 'PRACTICE', h: '리듬 랩 · 곡, 악기, 난이도를 골라서 자유롭게 연습해요', go: 'lab', fs: 2.5, ml: .9 },
-  { t: 'BAND', h: '멤버 · 컨디션 · 무대 배치', go: 'band', fs: 2.8, ml: .3 },
-  { t: 'PULSE', h: 'SNS · DM · 준비 중이에요', lock: true, fs: 3.2, ml: .1 },
+  { t: 'STORY', h: '', go: 'story', fs: 2.9, ml: .4 },
+  { t: 'LIVE', h: '곡을 클리어해서 팬을 모으고 에피소드를 열어요 · 멤버 SYNC', go: 'setlist', open: '1-2', fs: 3.0, ml: .9 },
+  { t: 'TOWN', h: '동네 사람들 · 호감도 이벤트 · 선물 · 하루 끝내기', go: 'town', open: '1-2', fs: 2.8, ml: .2 },
+  { t: 'BAND', h: '멤버 · 호감도 · SYNC · 무대 배치', go: 'band', fs: 2.6, ml: .6 },
+  { t: 'SHOP', h: '선물 · 아이템 · 무대 의상', go: 'shop', open: '1-2', fs: 2.4, ml: 1.1 },
+  { t: 'PULSE', h: 'SNS · DM · 준비 중이에요', lock: true, fs: 3.0, ml: .1 },
   { t: 'FILE', h: '47초 파일 · 준비 중이에요', lock: true, fs: 2.6, ml: 1.2 },
-  { t: 'SHOP', h: '의상 · 악기 스킨 · 준비 중이에요', lock: true, fs: 2.4, ml: .6 },
-  { t: 'ALBUM', h: 'CG · 컷신 · 엔딩 · 준비 중이에요', lock: true, fs: 2.6, ml: 1.0 },
-  { t: 'SYSTEM', h: '설정 · 준비 중이에요. 노트 속도와 판정 조정은 리듬 랩에서 할 수 있어요', lock: true, fs: 2.6, ml: .4 },
+  { t: 'SYSTEM', h: '설정 · 노트 속도 · 판정 조정 · 리듬 랩', go: 'lab', fs: 2.6, ml: .4 },
 ];
+const menuOpen = m => !m.open || !!(SAVE.game && SAVE.game.ep && SAVE.game.ep[m.open]);
+function storyLabel() {
+  const p = SAVE.progress;
+  if (!p || (p.story === 'prologue' && !p.done)) return '프롤로그 · 47초';
+  if (p.story === 'year' && !p.done) return '1년 후 · 걸려 온 전화';
+  if (!SAVE.game || SAVE.game.v !== 2 || !SAVE.game.ep['1-1']) return 'CHAPTER 1 · 1-1 반쯤 꺼진 간판';
+  return nextEpLabel();
+}
+function goStory() {
+  const p = SAVE.progress;
+  if (!p || (p.story === 'prologue' && !p.done)) return Story.start('prologue', p && p.story === 'prologue' ? p.step : 0);
+  if (p.story === 'year' && !p.done) return Story.start('year', p.step);
+  if (!SAVE.game || SAVE.game.v !== 2 || !SAVE.game.ep['1-1']) { W.init(); SAVE.progress = { story: 'year', step: 0, done: true }; writeSave(); return EPR.run('1-1'); }
+  go('chapter', { via: 'sweep' });
+}
 scene('menu', {
   title: '메인 메뉴', cls: 'mm pm-menu', back: false, via: 'ink',
   html: `<div class="vword" aria-hidden="true">RE:AMP!</div>
@@ -59,12 +74,13 @@ scene('menu', {
   enter() {
     const el = this.el, g = SAVE.game;
     G.stack = [];
-    MENU_BASE[0].h = todayLabel();
+    MENU_BASE[0].h = storyLabel();
+    $$('.menu span', el).forEach((sp, i) => sp.classList.toggle('lock', !!MENU_BASE[i].lock || !menuOpen(MENU_BASE[i])));
     $('.cmd-t', el).textContent = MENU_BASE[this.L.i].h;
     $('.wl-n', el).textContent = `¥${(g ? g.money : 0).toLocaleString('en-US')}`;
-    const dc = $('.datechip', el); if (dc) { const t = document.createElement('div'); t.innerHTML = weekChip(); dc.replaceWith(t.firstElementChild); }
-    // the party is who's actually with you: for now, just you
-    const team = [{ face: 'you', c: '#4FE3FF', hp: g ? g.hp : 80, mt: g ? g.mt : 40 }, ...(g ? g.joined : []).map(id => ({ ...MEMBERS.find(m => m.id === id), hp: 70, mt: 60 }))];
+    const dc = $('.datechip', el); if (dc) { const t = document.createElement('div'); t.innerHTML = dayChip(); dc.replaceWith(t.firstElementChild); }
+    // the party is who's actually with you
+    const team = [{ face: 'you', c: '#4FE3FF', hp: g ? g.hp : 80, mt: g ? g.mt : 40 }, ...(g && g.joined ? g.joined : []).map(id => ({ ...MEMBERS.find(m => m.id === id), face: id, ...W.mc(id) }))];
     $('.party', el).innerHTML = team.map(m => `<div class="pm" style="--c:${m.c}"><img src="${icon(m.face)}" alt=""><div class="bars"><i><b style="width:${m.hp}%"></b></i><i class="m"><b style="width:${m.mt}%"></b></i></div></div>`).join('');
     $('.hero-img img', el).src = `img/ill/fall_${G.gender === 'f' ? 'f' : 'm'}.webp`;
     A($('.hero-img', el), [{ translate: '0 -30%', opacity: 0 }, { translate: '0 0', opacity: 1 }], T.char * 1.3, { delay: 150 });
@@ -80,7 +96,7 @@ scene('menu', {
     A($('.cmd', el), KF.fromRight('30%'), T.char, { delay: 700 });
     if (!G.seenMenuTip) {
       G.seenMenuTip = true;
-      later(() => tutorial({ title: '메인 메뉴', body: '↑↓ 또는 마우스 휠로 고르고 <b>Z/Enter</b>나 클릭으로 들어갑니다. <b>X/Esc</b>는 뒤로.<br><b>TODAY</b>로 이야기와 이번 주를 이어가요. <b>PRACTICE</b>(리듬 랩)와 <b>BAND</b>는 시간을 쓰지 않아요.', asset: 'A20' }), 1600);
+      later(() => tutorial({ title: '메인 메뉴', body: '↑↓ 또는 마우스 휠로 고르고 <b>Z/Enter</b>나 클릭으로 들어갑니다. <b>X/Esc</b>는 뒤로.<br><b>STORY</b>로 이야기를 이어가고, <b>LIVE</b>에서 팬을 모아 다음 에피소드를 열어요. <b>TOWN</b>에서는 사람들을 만나고 선물을 줄 수 있어요.', asset: 'A20' }), 1600);
     }
   },
   key(k) {
@@ -89,12 +105,8 @@ scene('menu', {
     else if (k === 'ok') {
       const m = MENU_BASE[this.L.i];
       if (m.lock) { shake(this.L.el); toast('아직 준비 중이에요'); }
-      else if (m.go === 'today') {
-        if (SAVE.progress && SAVE.progress.story === 'year' && !SAVE.progress.done) Story.start('year', SAVE.progress.step);
-        else if (SAVE.game) W.resume();
-        else if (SAVE.progress && SAVE.progress.done) Story.start('year');
-        else Story.start('prologue', SAVE.progress ? SAVE.progress.step : 0);
-      }
+      else if (!menuOpen(m)) { shake(this.L.el); toast('STORY에서 1-2 「케이블 감는 법」까지 보면 열려요'); }
+      else if (m.go === 'story') goStory();
       else go(m.go, { arg: m.arg });
     } else if (k === 'y') toast('PULSE는 아직 준비 중이에요');
     else if (k === 'back') confirmBox('타이틀로 돌아갈까요?', '진행 상황은 자동으로 저장되어 있어요.', () => { G.stack = []; go('title', { via: 'iris', push: false }); });
@@ -143,7 +155,7 @@ scene('band', {
       <div class="b2-prop b2-wedge" style="left:72%;top:86%"></div>
       <div class="b2-front"></div><div class="b2-aud">▼ AUDIENCE ▼</div>
       <div class="pm2 you" data-id="you" data-asset="A10"><span class="glow"></span><span class="ring"><img alt=""></span><span class="tag"><span class="pt"></span><small></small></span></div>
-      ${MEMBERS.map(m => `<div class="pm2" data-id="${m.id}" style="--c:${m.c}" data-asset="A10"><span class="glow"></span><span class="ring"><img src="${icon(m.id)}" alt=""></span><span class="tag"><span class="pt"></span><small>${m.en}</small></span>${m.mt < 30 ? '<span class="warn">RUSH 위험</span>' : ''}</div>`).join('')}
+      ${MEMBERS.map(m => `<div class="pm2" data-id="${m.id}" style="--c:${m.c}" data-asset="A10"><span class="glow"></span><span class="ring"><img src="${icon(m.id)}" alt=""></span><span class="tag"><span class="pt"></span><small>${m.en}</small></span></div>`).join('')}
       <div class="b2-list"></div>
       <div class="b2-mine"><small>내 파트</small><span class="arw" data-tap="l1">◀ Q</span><b class="b2-pv"></b><span class="arw" data-tap="r1">E ▶</span></div>
       <div class="b2-form" data-tap="y"><i>Y</i><span class="b2-ft">결성!</span></div>
@@ -207,11 +219,11 @@ scene('band', {
       img.classList.toggle('need', !hasYouArt());
       $('.b2-part', info).textContent = `LEADER · ${PARTS.find(q => q[0] === G.inst)[1]}`;
       $('.b2-name', info).textContent = G.name;
-      const g = SAVE.game || { hp: 80, mt: 40, stage: 5, tech: 30 };
-      $('.lv', info).textContent = `무대감 ${g.stage}`; $('.ht', info).textContent = ''; $('.st', info).textContent = `테크닉 ${g.tech}`;
+      const g = SAVE.game || { hp: 80, mt: 40, fans: 0, money: 0 };
+      $('.lv', info).textContent = `팬 ${(g.fans || 0).toLocaleString('en-US')}`; $('.ht', info).textContent = ''; $('.st', info).textContent = `¥${(g.money || 0).toLocaleString('en-US')}`;
       $('.hp', info).style.width = g.hp + '%'; $('.mt', info).style.width = g.mt + '%'; $('.hpv', info).textContent = g.hp; $('.mtv', info).textContent = g.mt;
       $('.mt', info).classList.toggle('lo', g.mt < 30); $('.hp', info).classList.toggle('lo', g.hp < 40);
-      $('.b2-line', info).textContent = this.order().length > 1 ? '같이 무대에 설 사람이 생겼다. 아직은 좀 어색하다.' : '케이블은 다시 감게 됐지만, 무대에 설 자신은 아직 없다.';
+      $('.b2-line', info).textContent = this.order().length > 2 ? '네 악기를 다 치고 노래도 한다. 그래도 이제는 혼자 다 할 필요가 없다.' : this.order().length > 1 ? '같이 무대에 설 사람이 생겼다. 아직은 좀 어색하다.' : '케이블은 다시 감게 됐지만, 무대에 설 자신은 아직 없다.';
       $('.b2-go', info).hidden = true;
     } else {
       const m = MEMBERS.find(q => q.id === id), slot = this.slotOf(id);
@@ -219,10 +231,11 @@ scene('band', {
       img.classList.remove('need');
       $('.b2-part', info).textContent = slot === 'SUB' ? `${m.partName} → SUB · ${m.sub}` : m.partName;
       $('.b2-name', info).textContent = m.name;
-      $('.lv', info).textContent = `LV ${m.lv}`; $('.ht', info).textContent = hearts(m.lv); $('.st', info).textContent = STAGES[m.lv];
-      $('.hp', info).style.width = m.hp + '%'; $('.mt', info).style.width = m.mt + '%'; $('.hpv', info).textContent = m.hp; $('.mtv', info).textContent = m.mt;
-      $('.mt', info).classList.toggle('lo', m.mt < 30); $('.hp', info).classList.toggle('lo', m.hp < 40);
-      $('.b2-line', info).textContent = m.mt < 30 ? '오늘은 컨디션이 안 좋아 보인다.' : m.line;
+      const lv = Math.max(1, W.lv(m.id)), c0 = W.mc(m.id);
+      $('.lv', info).textContent = `♥ LV ${lv}`; $('.ht', info).textContent = hearts(lv); $('.st', info).textContent = `${STAGES[lv]} · SYNC LV${W.syncLv(m.id)}`;
+      $('.hp', info).style.width = c0.hp + '%'; $('.mt', info).style.width = c0.mt + '%'; $('.hpv', info).textContent = c0.hp; $('.mtv', info).textContent = c0.mt;
+      $('.mt', info).classList.toggle('lo', c0.mt < 30); $('.hp', info).classList.toggle('lo', c0.hp < 40);
+      $('.b2-line', info).textContent = c0.mt < 30 ? '요즘 표정이 어둡다.' : m.line;
       $('.b2-go', info).hidden = false;
     }
     cut.style.setProperty('--c', c); info.style.setProperty('--c', c);
@@ -239,7 +252,7 @@ scene('band', {
     this.live = !!(arg && arg.live);
     const el = this.el;
     const n = this.pms.filter(p => this.joined(p.dataset.id)).length;
-    $('.b2-sub', el).textContent = `${this.live ? '라이브 전 편성' : '무대 배치'} · 멤버 ${n}명${n < 6 ? ` · 빈 자리 ${6 - n}` : ''}`;
+    $('.b2-sub', el).textContent = `${(SAVE.game && SAVE.game.bandName) || '이름 없는 밴드'} · 멤버 ${n}명${n < 6 ? ` · 빈 자리 ${6 - n}` : ''}`;
     $('.b2-ft', el).textContent = this.live ? '결성! ▶ 곡 선택' : '결성!';
     this.pms.forEach(p => { p.style.transition = 'none'; });
     this.place(false);
@@ -286,13 +299,14 @@ scene('band', {
 });
 
 /* ---------------- MEMBER DETAIL (stats-screen layering) ---------------- */
-const MEV = {
-  rui: [['마스크 아래', 'clear'], ['새벽 3시의 DM', 'new'], ['맨얼굴의 노래', 'lock']],
-  natsu: [['첫 코드', 'clear'], ['강변 둑의 연습', 'lock'], ['그날의 관객석', 'lock']],
-  koto: [['개구리의 방', 'clear'], ['직캠 원본', 'new'], ['밖으로', 'lock']],
-  ren: [['차슈 서비스', 'clear'], ['가게의 빚', 'lock'], ['마지막 봄', 'lock']],
-  rei: [['트리플 S', 'new'], ['빠진 크레딧', 'lock'], ['웃는 얼굴', 'lock']],
-};
+/* the member's ♥ events from TOWN: seen · ready now · still locked */
+function memberEvents(id) {
+  const g = W.g || {};
+  return (typeof TEV !== 'undefined' ? TEV : []).filter(e => e.who === id && e.kind === 'bond').map(e => {
+    const seen = g.ev && g.ev[e.id], ready = !seen && afterOk(e.after, g) && W.lv(id) >= (e.lv || 1) && (!e.need || e.need(g));
+    return [seen || ready ? e.t : '???', seen ? 'clear' : ready ? 'new' : 'lock', e.lv || 1];
+  });
+}
 const MTABS = ['프로필', '이벤트', '한마디'];
 scene('member', {
   title: '멤버 상세', cls: 'mb2x',
@@ -322,14 +336,15 @@ scene('member', {
     $('.mx-por img', el).src = `img/ill/${m.id}.webp`;
     const kj = $('.mx-kj', el); $('b', kj).textContent = KANJI[m.id][0]; $('small', kj).textContent = KANJI[m.id][1]; kj.dataset.n = KANJI[m.id][0].length;
     $('.mx-part', el).textContent = m.partName;
-    $('.mx-name b', el).textContent = m.name;
+    $('.mx-name b', el).textContent = m.id === 'koto' && SAVE.game && !SAVE.game.flags.kotoName ? 'kero_P' : m.name;
     $('.mx-age', el).textContent = `${m.age}세 · ${m.en}`;
-    $('.mx-tag span', el).textContent = STAGES[m.lv];
-    $('.mx-data .hp', el).style.width = m.hp + '%';
-    $('.mx-data .mt', el).style.width = m.mt + '%';
-    $('.mx-data .mt', el).classList.toggle('lo', m.mt < 30);
-    $('.mx-hearts', el).textContent = hearts(m.lv);
-    $('.mx-dots', el).innerHTML = MEMBERS.map((_, i) => `<i class="${i === this.i ? 'on' : ''}"></i>`).join('');
+    const lv = Math.max(1, W.lv(m.id)), c0 = W.mc(m.id);
+    $('.mx-tag span', el).textContent = `${STAGES[lv]} · SYNC LV${W.syncLv(m.id)}`;
+    $('.mx-data .hp', el).style.width = c0.hp + '%';
+    $('.mx-data .mt', el).style.width = c0.mt + '%';
+    $('.mx-data .mt', el).classList.toggle('lo', c0.mt < 30);
+    $('.mx-hearts', el).textContent = hearts(lv);
+    $('.mx-dots', el).innerHTML = MEMBERS.filter(x => !SAVE.game || SAVE.game.met[x.id]).map(x => `<i class="${x === m ? 'on' : ''}"></i>`).join('');
     this.body(false);
     this.seq(dir ? 0 : 150);
   },
@@ -348,7 +363,7 @@ scene('member', {
   body(anim) {
     const el = this.el, m = MEMBERS[this.i], b = $('.mx-body', el);
     if (this.tab === 0) b.innerHTML = `<p class="mx-hook">${m.hook}</p><dl><dt>좋아하는 것</dt><dd>${m.like}</dd><dt>싫어하는 것</dt><dd>${m.hate}</dd><dt>파트</dt><dd>${m.partName} · 서브 ${m.sub}</dd></dl>`;
-    else if (this.tab === 1) b.innerHTML = `<ul class="mx-evs">${MEV[m.id].map(([t, s]) => `<li class="${s}"><span>${t}</span><em>${s === 'clear' ? 'CLEAR' : s === 'new' ? 'NEW!' : 'LOCK'}</em></li>`).join('')}</ul>`;
+    else if (this.tab === 1) b.innerHTML = `<ul class="mx-evs">${memberEvents(m.id).map(([t, s, lv]) => `<li class="${s}"><span>${t}</span><em>${s === 'clear' ? 'CLEAR' : s === 'new' ? 'TOWN에서 볼 수 있어요' : `♥ LV${lv}`}</em></li>`).join('')}</ul>`;
     else b.innerHTML = `<div class="mx-line"><img src="img/c/${m.face2}.jpg" alt=""><span>${m.line}</span></div>`;
     if (anim) stagger([...b.firstElementChild.children].length ? [...b.firstElementChild.children] : [b.firstElementChild], KF.fromRight('8%'), T.slam, 0, 50);
   },
@@ -361,8 +376,8 @@ scene('member', {
     stagger($$('.mx-tabs span', this.el), KF.fromLeft('-40%'), T.slam, 700, 60);
   },
   key(k) {
-    if (k === 'left') { this.i = (this.i + MEMBERS.length - 1) % MEMBERS.length; this.paint(-1); }
-    else if (k === 'right') { this.i = (this.i + 1) % MEMBERS.length; this.paint(1); }
+    const known = MEMBERS.map((m, i) => i).filter(i => !SAVE.game || SAVE.game.met[MEMBERS[i].id]);
+    if ((k === 'left' || k === 'right') && known.length > 1) { const j = known.indexOf(this.i); this.i = known[(j + (k === 'left' ? -1 : 1) + known.length) % known.length]; this.paint(k === 'left' ? -1 : 1); }
     else if (k === 'l1' || k === 'up') this.TL.move(-1);
     else if (k === 'r1' || k === 'down') this.TL.move(1);
     else return undefined;
