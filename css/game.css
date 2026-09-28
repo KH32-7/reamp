@@ -10,8 +10,9 @@ body{padding:0}
 .tt-lab:hover{border-color:var(--lime);color:#fff}
 
 /* create: the heading of the one-year-ago profile */
-.cr-head{position:absolute;left:5.5%;top:7%;font-family:var(--kr-display);font-size:38px;color:#fff;letter-spacing:.08em;text-shadow:3px 3px 0 var(--cobalt);z-index:3}
-.cr .cr-steps{top:15.5%}
+.cr .cr-head{position:absolute;left:44%;top:4.6%;display:block;font-family:var(--kr-display);font-size:30px;line-height:1.1;color:#fff;letter-spacing:.08em;text-shadow:3px 3px 0 var(--cobalt);z-index:3}
+.cr .cr-steps{top:11%}
+.cr .cr-art{top:4%;height:100%}
 
 /* adv: narration + tinnitus blur + past date chip */
 .adv3 .adv-box.narr .adv-name,.adv3 .adv-box.narr .adv-face{display:none}

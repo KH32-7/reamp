@@ -458,6 +458,41 @@ function tutorial({ title, body, asset }) {
   return modal({ title: `<small>TUTORIAL</small>${title}`, body, buttons: [{ t: '알겠어' }], tone: 'tut', asset });
 }
 
+/* ---------- preloading ----------
+   Every image is fetched and decoded before a screen asks for it, so swaps (gender, instrument, expressions)
+   are instant. EARLY (manifest.js) gates the loading screen; LATE, the videos and the song stems stream in behind. */
+const PRE = { early: 0, earlyDone: 0, keep: [], ready: null };
+function loadImages(list, onEach, conc = 6) {
+  return new Promise(res => {
+    let i = 0, done = 0;
+    if (!list.length) return res();
+    const next = () => {
+      if (i >= list.length) return;
+      const im = new Image();
+      im.decoding = 'async';
+      const fin = () => { done++; onEach && onEach(); if (done === list.length) res(); else next(); };
+      im.onload = () => (im.decode ? im.decode().catch(() => {}) : Promise.resolve()).then(fin);
+      im.onerror = fin;
+      im.src = list[i++];
+      PRE.keep.push(im);                       // hold a reference so the decoded bitmap stays warm
+    };
+    for (let k = 0; k < Math.min(conc, list.length); k++) next();
+  });
+}
+function warm(urls) {                          // one at a time, low priority: fills the HTTP cache for later fetches
+  return urls.reduce((p, u) => p.then(() => fetch(u, { priority: 'low' }).then(r => r.blob()).catch(() => {})), Promise.resolve());
+}
+function startPreload() {
+  if (PRE.ready || typeof IMG_EARLY === 'undefined') return PRE.ready || Promise.resolve();
+  PRE.early = IMG_EARLY.length;
+  PRE.ready = loadImages(IMG_EARLY, () => { PRE.earlyDone++; });
+  PRE.ready.then(() => loadImages(IMG_LATE, null, 4)).then(() => {
+    const songs = typeof SONGS !== 'undefined' ? SONGS.filter(x => x.stems) : [];
+    return warm([...WARM_LATE, ...songs.flatMap(x => [x.chart, ...Object.values(x.stems)])]);
+  });
+  return PRE.ready;
+}
+
 /* ---------- boot ---------- */
 function fit() {
   const vp = $('#viewport');
@@ -478,6 +513,7 @@ function boot() {
   window.addEventListener('resize', fit);
   setBeat();
   fit();
+  startPreload();
   const shot = QS.get('shot');
   if (shot && SC[shot]) {   // dev hook for headless screenshots: ?shot=<scene>&arg=<n>
     G.seenTutorial = true;

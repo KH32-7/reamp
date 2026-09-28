@@ -107,16 +107,22 @@ scene('loading', {
     A(logo, KF.fade, 500, { fill: 'both' });
     A($('.ld-tip', el), KF.fromBottom('60%'), T.slam, { delay: 300 });
     this.sig = signal($('.sig', el), logo, { from: 'left', travel: false });
-    // stepped progress: loads in bursts, like a real loader
-    const steps = [[0, 0], [300, .18], [650, .41], [900, .47], [1300, .78], [1650, .93], [1900, 1]];
+    // the bar follows the real EARLY image load; at least ~1.9s so the logo gets its moment
     if (document.body.classList.contains('shotmode')) { this.sig.reveal = .62; pct.textContent = '62%'; return; }
-    steps.forEach(([ms, v], i) => later(() => {
-      const from = this.sig.reveal, t0 = performance.now(), dur = 240 * G.K;
-      const tick = now => { const k = Math.max(0, Math.min(1, (now - t0) / dur)); this.sig.reveal = from + (v - from) * (1 - (1 - k) ** 3); pct.textContent = Math.round(this.sig.reveal * 100) + '%'; if (k < 1) requestAnimationFrame(tick); };
+    const t0 = performance.now(), MIN = 1900 * G.K, CAP = 25000;
+    let shown = 0, popped = false;
+    const tick = now => {
+      if (G.cur !== 'loading') return;
+      const real = PRE.early ? PRE.earlyDone / PRE.early : 1, time = Math.min(1, (now - t0) / MIN);
+      const target = Math.min(real, .15 + time * .85);            // never runs ahead of the files
+      shown += (target - shown) * .12;
+      if (target - shown < .002) shown = target;
+      this.sig.reveal = shown; pct.textContent = Math.round(shown * 100) + '%';
+      if (shown >= 1 && !popped) { popped = true; A(logo, KF.popIn, T.pop, { e: EZ.pop }); later(() => go('title', { push: false }), 600); return; }
+      if (now - t0 > CAP && !popped) { popped = true; go('title', { push: false }); return; }   // slow network: carry on, the rest streams in
       requestAnimationFrame(tick);
-      if (i === steps.length - 1) A(logo, KF.popIn, T.pop, { delay: 200, e: EZ.pop });
-    }, ms));
-    later(() => go('title', { push: false }), 2500);
+    };
+    requestAnimationFrame(tick);
   },
   leave() { this.sig && this.sig.stop(); },
   key() { return true; },
@@ -245,11 +251,17 @@ scene('create', {
     $('#crName', el).addEventListener('input', e => { G.name = e.target.value.trim() || '나기'; });
   },
   paintArt(anim) {
-    const el = this.el, img = $('.cr-art img', el), gt = hasYouArt();
-    img.src = youImg(); img.classList.toggle('dim', !gt);
+    const el = this.el, img = $('.cr-art img', el), gt = hasYouArt(), src = youImg();
+    img.classList.toggle('dim', !gt);
     $('.cr-need', el).hidden = gt || this.step < 2;
     $('.cr-need em', el).textContent = INSTS.find(x => x[0] === G.inst)[2];
-    if (anim) A($('.cr-art', el), [{ translate: '0 -6%', opacity: .2 }, { translate: '0 0', opacity: 1 }], T.char);
+    // swap only once the new art is decoded, so the old picture never lingers under the entrance motion
+    const next = new Image(); next.src = src;
+    (next.decode ? next.decode() : Promise.resolve()).catch(() => {}).then(() => {
+      if (youImg() !== src) return;                 // the choice moved on while this one loaded
+      img.src = src;
+      if (anim) A($('.cr-art', el), [{ translate: '0 3%', opacity: .2 }, { translate: '0 0', opacity: 1 }], T.char);
+    });
   },
   showStep(dir) {
     const el = this.el, st = CSTEPS[this.step];
