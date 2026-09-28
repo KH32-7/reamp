@@ -157,7 +157,8 @@ scene('live', {
     const L = this.L = new Live({
       prep, part, diff, party, events, seed: arg.seed,
       noFail: SETTINGS.noFail || arg.noFail || arg.scenario === 'incident',          // the 47 seconds can't be failed tutorial: arg.scenario === 'tutorial',
-      randomFumbles: arg.scenario === 'lab', auto: arg.auto, heat0: arg.heat0, from: arg.from, until,
+      randomFumbles: arg.scenario === 'lab', auto: arg.auto, heat0: arg.heat0, until,
+      from: arg.from || (arg.scenario === 'incident' ? song.v2 || 0 : 0),
       on: (t, d) => this.ev(t, d),
     });
     this.R = Highway(this.cv, L, { k: Math.min(2, (G.scale || 1) * (window.devicePixelRatio || 1)) });
@@ -312,7 +313,7 @@ scene('live', {
     $('.ht-bar b', el).style.width = L.heat + '%';
     $('.ht-n', el).textContent = Math.round(L.heat);
     el.classList.toggle('cold', L.heat < 25 && !L.bo);
-    const prog = Math.max(0, Math.min(1, L.time / L.endT));
+    const prog = Math.max(0, Math.min(1, (L.time - L.from) / (L.endT - L.from)));
     $('.lv-prog i', el).style.transform = `scaleX(${prog})`;
     // lights breathe on the beat (harder when the crowd is hot); the stage and HUD thump, a touch harder on the downbeat
     const b = Charter.beatOf(L.tm, L.time), live = b > 0 && !L.bo && !L.paused, ph = ((b % 1) + 1) % 1;
@@ -426,8 +427,18 @@ scene('live', {
     $('em', ci).textContent = 'HARU'; $('small', ci).textContent = '인이어를 누른 채 굳어 있다';
     A(ci, [{ translate: '130% 0', opacity: 1 }, { translate: '0 0', opacity: 1, offset: .08 }, { translate: '0 0', opacity: 1, offset: .9 }, { translate: '0 0', opacity: 0 }], 2600, { e: EZ.lin, fill: 'forwards' })
       .finished.then(() => { ci.classList.remove('drop'); $('b', ci).innerHTML = 'EYE<br>CONTACT!'; $('small', ci).textContent = '한 마디 · GREAT 이상'; });
+    if (m) m.goneT = this.L.time;                  // their mini lane snaps shut
+    // their name plate flickers out and the list closes up: they are not coming back
     const row = $(`.lv-prow[data-id="${m && m.id}"]`, this.el);
-    if (row) { row.classList.add('lost'); $('.st', row).textContent = 'NO SIGNAL'; }
+    if (row) {
+      row.classList.add('lost'); $('.st', row).textContent = 'NO SIGNAL';
+      A(row, [{ opacity: 1 }, { opacity: .2 }, { opacity: 1 }, { opacity: .1 }, { opacity: .8 }, { opacity: 0 }], 420, { e: 'steps(6)', fill: 'forwards' });
+      setTimeout(() => {
+        const h = row.offsetHeight;
+        A(row, [{ height: h + 'px', marginBottom: '0px' }, { height: '0px', marginBottom: '-10px' }], 260, { e: EZ.slam, fill: 'forwards' });
+        setTimeout(() => row.remove(), 280);
+      }, 440);
+    }
   },
   cameo(who) {
     const c = $('.lv-cameo', this.el);
@@ -442,6 +453,7 @@ scene('live', {
   blackout(d) {
     const el = this.el, bo = $('.lv-bo', el);
     el.classList.add('bo');
+    this.L.members.forEach(m => { if (m.goneT == null) m.goneT = this.L.time; });   // the band's lanes are gone
     bo.hidden = false; $('.bo-prompt', bo).hidden = true; $('.bo-err', bo).hidden = true;
     $('.lv-combo', el).style.opacity = 0; $('.jt', el).textContent = '';
     $$('.lv-prow', el).forEach(r => { if (!r.classList.contains('you')) { r.classList.add('lost'); const s = $('.st', r); if (s) s.textContent = 'NO SIGNAL'; } });

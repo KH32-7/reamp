@@ -29,7 +29,8 @@ class Live {
     // highlight cut: the song stops at `until` and fades out; notes past it are dropped, holds that would cross it become taps
     this.until = cfg.until || 0;
     if (this.until) this.notes = this.notes.filter(n => n.t < this.until - .05).map(n => n.len && n.end > this.until - .1 ? { ...n, len: 0, end: 0 } : n);
-    this.events = (cfg.events || []).map(e => ({ ...e, at: e.at ?? Charter.timeOf(this.tm, e.bar * 4), done: false })).sort((a, b) => a.at - b.at);
+    this.from = cfg.from || 0;                                  // start mid-song (the prologue's 2nd song starts at its 2nd verse)
+    this.events = (cfg.events || []).map(e => ({ ...e, at: e.at ?? Charter.timeOf(this.tm, e.bar * 4), done: false })).filter(e => e.at >= this.from - .05).sort((a, b) => a.at - b.at);
     this.bo = null;
     const bo = this.events.find(e => e.type === 'blackout');
     const lastAny = Math.max(0, ...Object.values(prep.charts).map(c => (c[1] && c[1].length ? c[1][c[1].length - 1].t : 0)));
@@ -38,8 +39,7 @@ class Live {
     this.buildEyes();
     if (bo) this.buildGhosts(bo);
     this.notes.sort((a, b) => a.t - b.t || a.lane - b.lane);
-    this.from = cfg.from || 0;                                  // dev: start mid-song
-    if (this.from) { this.notes = this.notes.filter(n => n.t >= this.from + 1); this.members.forEach(m => { m.ni = m.notes.findIndex(n => n.t >= this.from); if (m.ni < 0) m.ni = m.notes.length; }); }
+    if (this.from) { this.notes = this.notes.filter(n => n.t >= this.from - .05); this.members.forEach(m => { m.ni = m.notes.findIndex(n => n.t >= this.from); if (m.ni < 0) m.ni = m.notes.length; }); }
     const scoring = this.notes.filter(n => !n.ghost);
     this.total = scoring.length + scoring.filter(n => n.len).length || 1;
     Object.assign(this, {
@@ -79,6 +79,7 @@ class Live {
       // cover notes: the member's notes inside the fumble land in your lanes
       const lanes = Math.min(4, this.lanes);
       m.fumbles = m.fumbles.filter(f => {
+        if (f.t0 < this.from) return false;
         const theirs = m.notes.filter(n => n.t >= f.t0 - .01 && n.t < f.t1);
         f.covers = 0;
         const mark = p => Object.assign(p, { kind: 'cover', who: m.id, c: m.c, fumble: f });
@@ -168,6 +169,7 @@ class Live {
     this.sfx = ac.createGain(); this.sfx.gain.value = .6; this.sfx.connect(AU.master);
     // count-in sticks, one on each number
     this.cd.at.slice(0, 3).forEach((t, k) => { if (t > ac.currentTime) this.stick(t, k ? .7 : 1); });
+    if (this.from) { this.music.gain.setValueAtTime(0, this.t0 + this.from); this.music.gain.linearRampToValueAtTime(1, this.t0 + this.from + .03); }
     // highlight: fade the record out after the cut point
     if (this.until) { const t = this.t0 + this.until; this.music.gain.setValueAtTime(1, t); this.music.gain.linearRampToValueAtTime(0, t + FADE_OUT); }
     // the cut is scheduled sample-accurately
@@ -190,6 +192,23 @@ class Live {
     const ac = this.ac, t = ac.currentTime, s = ac.createBufferSource(), f = ac.createBiquadFilter(), g = ac.createGain();
     s.buffer = this.noiseBuf(); f.type = 'bandpass'; f.frequency.value = this.part === 'BA' ? 300 : 1400; f.Q.value = 2;
     s.connect(f).connect(g).connect(this.sfx); g.gain.setValueAtTime(.25, t); g.gain.exponentialRampToValueAtTime(.001, t + .09); s.start(t, Math.random() * .5); s.stop(t + .1);
+  }
+  /* the 47 seconds: a yellow note lands as a low, dull thud that rings out */
+  boom() {
+    const ac = this.ac, t = ac.currentTime, out = this.sfx;
+    const o = ac.createOscillator(), g = ac.createGain();
+    o.type = 'sine'; o.frequency.setValueAtTime(120, t); o.frequency.exponentialRampToValueAtTime(36, t + .4);
+    g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(1, t + .006); g.gain.exponentialRampToValueAtTime(.001, t + 1.8);
+    o.connect(g).connect(out); o.start(t); o.stop(t + 1.9);
+    const s = ac.createBufferSource(), f = ac.createBiquadFilter(), g2 = ac.createGain();
+    s.buffer = this.noiseBuf(); f.type = 'lowpass'; f.frequency.value = 170;
+    g2.gain.setValueAtTime(.7, t); g2.gain.exponentialRampToValueAtTime(.001, t + .45);
+    s.connect(f).connect(g2).connect(out); s.start(t, Math.random() * .5); s.stop(t + .5);
+    // the tail: dark echoes that fade (쿵……)
+    const d = ac.createDelay(1), fb = ac.createGain(), lp = ac.createBiquadFilter();
+    d.delayTime.value = .34; fb.gain.value = .42; lp.type = 'lowpass'; lp.frequency.value = 240;
+    g.connect(d); d.connect(lp).connect(fb).connect(d); lp.connect(out);
+    setTimeout(() => { try { g.disconnect(d); lp.disconnect(); fb.disconnect(); } catch (e) {} }, 5000);
   }
   cheer(v = .5, len = 1.6) {
     const ac = this.ac, t = ac.currentTime, s = ac.createBufferSource(), f = ac.createBiquadFilter(), g = ac.createGain();
@@ -270,6 +289,7 @@ class Live {
     try { this.srcs.forEach(s => { try { s.stop(); } catch (e) {} }); } catch (e) {}
     if (this.ac && this.ac.state === 'suspended') this.ac.resume();
     if (this.tinn) try { this.tinn.stop(); } catch (e) {}
+    if (this.boFx) try { this.boFx.wob.stop(); this.boFx.trem.stop(); } catch (e) {}
   }
 
   /* ---------- input ---------- */
@@ -319,7 +339,7 @@ class Live {
 
   judge(n, k, dt = 0) {
     n.j = k; n.dt = dt;
-    if (n.ghost) { this.on('ghost', { n, k }); return; }
+    if (n.ghost) { if (n.rec && k < 3) this.boom(); this.on('ghost', { n, k }); return; }
     this.counts[k]++;
     if (k < 3) {
       this.combo++; this.maxCombo = Math.max(this.maxCombo, this.combo);
@@ -397,6 +417,15 @@ class Live {
     const o = ac.createOscillator(), g = ac.createGain(); o.frequency.value = 7400; o.connect(g).connect(AU.master);
     g.gain.setValueAtTime(0, ac.currentTime); g.gain.linearRampToValueAtTime(.05, ac.currentTime + .08); g.gain.exponentialRampToValueAtTime(.012, ac.currentTime + 6);
     o.start(); this.tinn = o; this.tinnG = g;
+    // the sound dies, then comes back muffled and wavering, as if through damaged ears (웅웅)
+    const t = ac.currentTime, mg = this.music.gain, lp = this.lp;
+    mg.cancelScheduledValues(t); mg.setValueAtTime(0, t); mg.setTargetAtTime(.26, t + 1.4, 1.1);
+    lp.frequency.cancelScheduledValues(t); lp.frequency.setValueAtTime(330, t); lp.Q.value = 5;
+    const wob = ac.createOscillator(), wg = ac.createGain(); wob.frequency.value = .45; wg.gain.value = 150;
+    wob.connect(wg).connect(lp.frequency); wob.start();
+    const trem = ac.createOscillator(), tg = ac.createGain(); trem.frequency.value = .8; tg.gain.setValueAtTime(0, t); tg.gain.setTargetAtTime(.08, t + 2.5, 1);
+    trem.connect(tg).connect(mg); trem.start();
+    this.boFx = { wob, trem, tg };
     this.holding = [];
     this.members.forEach(m => { m.dropped = true; });
     this.partGain(0);
@@ -415,6 +444,8 @@ class Live {
     if (bo.stage === 'on' && el >= bo.dur) {
       bo.stage = 'end';
       this.tinnG.gain.setTargetAtTime(.0001, this.ac.currentTime, 1.2);
+      this.music.gain.cancelScheduledValues(this.ac.currentTime); this.music.gain.setTargetAtTime(0, this.ac.currentTime, .9);
+      if (this.boFx) this.boFx.tg.gain.setTargetAtTime(0, this.ac.currentTime, .5);
       this.on('handsStop', {});
     }
     if (bo.stage === 'end' && el >= bo.dur + 3) this.finish();

@@ -454,9 +454,12 @@ function Highway(cv, live, o = {}) {
     const top = 230, bot = 540, span = 1.4;
     live.members.forEach((m, i) => {
       const [x] = SLOT[i] || SLOT[0], w = 28;
+      const keep = m.goneT == null ? 1 : 1 - (t - m.goneT) / .3;   // gone: the lane snaps shut sideways
+      if (keep <= 0) return;
       m.flash = Math.max(0, m.flash - dt * 5);
       const dead = m.dropped;
       ctx.save();
+      if (keep < 1) { ctx.translate(x, 0); ctx.scale(keep * keep, 1); ctx.translate(-x, 0); }
       ctx.globalAlpha = dead ? .35 : .9;
       const g = ctx.createLinearGradient(0, top, 0, bot); g.addColorStop(0, 'rgba(11,16,51,0)'); g.addColorStop(1, 'rgba(11,16,51,.75)');
       ctx.fillStyle = g; ctx.fillRect(x - w / 2, top, w, bot - top);

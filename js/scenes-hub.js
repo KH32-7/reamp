@@ -2,7 +2,7 @@
 'use strict';
 const MEMBERS = [
   { id: 'rui', name: '아마네 루이', en: 'RUI', part: 'VO', partName: 'VOCAL', sub: '코러스', c: 'var(--c-rui)', hp: 80, mt: 62, lv: 2, face: 'rui_mask', face2: 'rui_smile', age: 19,
-    hook: '아이돌 연습생 시절 평가 무대에서 목소리가 안 나와 방출됐다. 그 뒤로는 가면을 써야 노래할 수 있다.', like: '탄산수, 늦은 밤 편의점', hate: '평가받는 자리', line: '너 들으라고 부른 거 아니거든.' },
+    hook: '아이돌 연습생 시절 평가 무대에서 목소리가 안 나와 방출됐다. 그 뒤로는 마스크를 써야 노래할 수 있다.', like: '탄산수, 늦은 밤 편의점', hate: '평가받는 자리', line: '너 들으라고 부른 거 아니거든.' },
   { id: 'natsu', name: '이부키 나츠', en: 'NATSU', part: 'GT', partName: 'GUITAR', sub: '세컨드 기타', c: 'var(--c-natsu)', hp: 95, mt: 90, lv: 1, face: 'natsu_grin', face2: 'natsu_face', age: 16,
     hook: '상점가 헌옷가게에서 알바하는 고1. 「47초」 영상을 보고 기타를 시작했다. 의욕은 넘치는데 실력은 아직 초보다.', like: '기타 연습, 편의점 신상', hate: '가만히 기다리는 것', line: '선배! 오늘 F 코드 소리 났어요!' },
   { id: 'koto', name: '히나타 코토', en: 'KOTO', part: 'BA', partName: 'BASS', sub: '신스', c: 'var(--c-koto)', hp: 34, mt: 58, lv: 3, face: 'koto_neutral', face2: 'koto_phone', age: 17,
@@ -287,7 +287,7 @@ scene('band', {
 
 /* ---------------- MEMBER DETAIL (stats-screen layering) ---------------- */
 const MEV = {
-  rui: [['가면 아래', 'clear'], ['새벽 3시의 DM', 'new'], ['맨얼굴의 노래', 'lock']],
+  rui: [['마스크 아래', 'clear'], ['새벽 3시의 DM', 'new'], ['맨얼굴의 노래', 'lock']],
   natsu: [['첫 코드', 'clear'], ['강변 둑의 연습', 'lock'], ['그날의 관객석', 'lock']],
   koto: [['개구리의 방', 'clear'], ['직캠 원본', 'new'], ['밖으로', 'lock']],
   ren: [['차슈 서비스', 'clear'], ['가게의 빚', 'lock'], ['마지막 봄', 'lock']],
