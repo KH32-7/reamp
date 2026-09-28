@@ -151,7 +151,7 @@ class Live {
     this.gains = {}; this.srcs = [];
     for (const [role, buf] of Object.entries(this.prep.bufs)) {
       const g = ac.createGain(), s = ac.createBufferSource();
-      g.gain.value = role === this.role ? this.boost : 1; s.buffer = buf; s.connect(g).connect(this.music);
+      g.gain.value = role === this.role ? this.boost : role === 'vocals' && !SETTINGS.vocals ? 0 : 1; s.buffer = buf; s.connect(g).connect(this.music);
       s.start(this.t0 + this.from, this.from);
       this.gains[role] = g; this.srcs.push(s);
     }
@@ -203,6 +203,11 @@ class Live {
     const t = this.ac.currentTime;
     g.gain.cancelScheduledValues(t);
     g.gain.setTargetAtTime(v * (g === this.gPart ? this.boost : 1), t, .012);
+  }
+  /* lead vocal on / off (setting; the backing vocals stay) */
+  setVocals(on) {
+    const g = this.gains && this.gains.vocals;
+    if (g && this.ac) { g.gain.cancelScheduledValues(this.ac.currentTime); g.gain.setTargetAtTime(on ? 1 : 0, this.ac.currentTime, .05); }
   }
   /* a miss: the part drops for a moment and comes back on its own (it used to stay muted until your next hit) */
   duck(n, depth = .12, len = .45) {

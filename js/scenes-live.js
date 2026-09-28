@@ -465,9 +465,9 @@ scene('live', {
   },
 
   /* P3-style list menus drawn over the live (pause / fail) */
-  listMenu(root, items, onPick) {
+  listMenu(root, items, onPick, start = 0) {
     const spans = $$('span', root);
-    let i = 0;
+    let i = start;
     const paint = () => spans.forEach((s, k) => s.classList.toggle('sel', k === i));
     paint();
     spans.forEach((s, k) => { s.onclick = () => { i = k; paint(); done(); }; s.onmouseenter = () => { i = k; paint(); }; });
@@ -483,14 +483,16 @@ scene('live', {
     const L = this.L; L.pause();
     const el = document.createElement('div');
     el.className = 'pause';
-    const items = ['계속하기', '처음부터', `노트 속도 ×${SETTINGS.speed.toFixed(1)}`, this.arg.story ? '타이틀로' : 'RHYTHM LAB으로'];
+    const vo = () => `보컬 ${SETTINGS.vocals ? 'ON' : 'OFF'}`;
+    const items = ['계속하기', '처음부터', `노트 속도 ×${SETTINGS.speed.toFixed(1)}`, vo(), this.arg.story ? '타이틀로' : 'RHYTHM LAB으로'];
     el.innerHTML = `<div class="ps-dim"></div><div class="ps-title">PAUSE</div><div class="ps-list">${items.map(t => `<span>${t}</span>`).join('')}</div><div class="ps-song">${this.prep.song.title} · ${DIFFS[L.diff]} · ${this.part}</div>`;
     overlayRoot.appendChild(el);
     A($('.ps-dim', el), KF.fade, T.slam); A($('.ps-title', el), KF.fromLeft('-60%'), T.slam);
     stagger($$('.ps-list span', el), KF.fromLeft('-40%'), T.slam, 60);
     const close = () => { el.remove(); };
-    const menu = () => this.listMenu(el, Object.assign(items, { cancel: 0 }), n => {
-      if (n === 2) { SETTINGS.speed = SETTINGS.speed >= 2 ? .6 : +(SETTINGS.speed + .2).toFixed(1); saveSettings(); $$('.ps-list span', el)[2].textContent = `노트 속도 ×${SETTINGS.speed.toFixed(1)}`; menu(); return; }
+    const menu = (at = 0) => this.listMenu(el, Object.assign(items, { cancel: 0 }), n => {
+      if (n === 2) { SETTINGS.speed = SETTINGS.speed >= 2 ? .6 : +(SETTINGS.speed + .2).toFixed(1); saveSettings(); $$('.ps-list span', el)[2].textContent = `노트 속도 ×${SETTINGS.speed.toFixed(1)}`; menu(2); return; }
+      if (n === 3) { SETTINGS.vocals = !SETTINGS.vocals; saveSettings(); L.setVocals(SETTINGS.vocals); $$('.ps-list span', el)[3].textContent = vo(); menu(3); return; }
       close();
       if (n === 0) this.resumeCount();
       else if (n === 1) { L.stop(); this.restart(); }
@@ -681,6 +683,7 @@ scene('lab', {
       ['노트 속도', [`×${SETTINGS.speed.toFixed(1)}`], 'speed'],
       ['판정 오프셋', [`${SETTINGS.offset > 0 ? '+' : ''}${SETTINGS.offset} ms`], 'offset'],
       ['내 악기 볼륨', [SETTINGS.partVol === 1 ? '원곡 그대로 (×1)' : `×${SETTINGS.partVol}`], 'partdb'],
+      ['보컬', [SETTINGS.vocals ? 'ON' : 'OFF (반주만)'], 'vocals'],
       ['노페일', [SETTINGS.noFail ? 'ON' : 'OFF'], 'nofail'],
       ['오토플레이', [LAB.auto ? 'ON (구경)' : 'OFF'], 'auto'],
     ];
@@ -712,6 +715,7 @@ scene('lab', {
     else if (id === 'offset') { SETTINGS.offset = Math.max(-200, Math.min(200, SETTINGS.offset + d * 5)); saveSettings(); }
     else if (id === 'partdb') { const v = [1, 1.5, 2], i = Math.max(0, v.indexOf(SETTINGS.partVol)); SETTINGS.partVol = v[(i + d + 3) % 3]; saveSettings(); }
     else if (id === 'nofail') { SETTINGS.noFail = !SETTINGS.noFail; saveSettings(); }
+    else if (id === 'vocals') { SETTINGS.vocals = !SETTINGS.vocals; saveSettings(); }
     else if (id === 'auto') LAB.auto = !LAB.auto;
     this.paint();
     pop($('.lo-row.sel b', this.el));
