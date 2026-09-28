@@ -375,6 +375,13 @@ function dispatch(k) {
   const r = def.key ? def.key(k) : undefined;
   if (r === undefined && k === 'back') back();
 }
+/* right click = back (X / Esc) on every screen and window; the live scene maps it to its own pause / cancel */
+document.addEventListener('contextmenu', e => {
+  e.preventDefault();
+  const def = SC[G.cur];
+  if (def && def.rawKeys && def.onBack) return def.onBack();
+  dispatch('back');
+});
 document.addEventListener('keydown', e => {
   const t = e.target;
   const typing = t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA');

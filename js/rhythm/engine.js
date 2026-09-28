@@ -9,6 +9,7 @@
 const WIN = { P: .045, G: .09, g: .13 };          // judgement windows (s)
 const JN = ['PERFECT', 'GREAT', 'GOOD', 'MISS'];
 
+const VOX_ROLES = ['vocals', 'bvox'];                         // what the vocals setting mutes
 const FADE_OUT = 2.4;                                          // highlight version: seconds of fade after the cut
 class Live {
   constructor(cfg) {
@@ -23,7 +24,8 @@ class Live {
     this.notes = src.map(n => ({ ...n, kind: part === 'DR' && n.lane === 4 ? 'kick' : 'tap', j: null }));
     // shared notes (chorus / percussion / strings / synth / other) are folded into every part's gaps
     const ex = prep.charts.EX && prep.charts.EX[diff];
-    if (ex && !cfg.noExtras) for (const n of Charter.merge(this.notes, ex, this.tm, diff, this.lanes)) this.notes.push({ ...n, kind: 'extra', c: ROLE_C[n.role] || '#FFFFFF', j: null });
+    // vocals off: the chorus goes quiet too, so its gem notes are left out
+    if (ex && !cfg.noExtras) for (const n of Charter.merge(this.notes, ex.filter(n => SETTINGS.vocals || !VOX_ROLES.includes(n.role)), this.tm, diff, this.lanes)) this.notes.push({ ...n, kind: 'extra', c: ROLE_C[n.role] || '#FFFFFF', j: null });
     // highlight cut: the song stops at `until` and fades out; notes past it are dropped, holds that would cross it become taps
     this.until = cfg.until || 0;
     if (this.until) this.notes = this.notes.filter(n => n.t < this.until - .05).map(n => n.len && n.end > this.until - .1 ? { ...n, len: 0, end: 0 } : n);
@@ -151,7 +153,7 @@ class Live {
     this.gains = {}; this.srcs = [];
     for (const [role, buf] of Object.entries(this.prep.bufs)) {
       const g = ac.createGain(), s = ac.createBufferSource();
-      g.gain.value = role === this.role ? this.boost : role === 'vocals' && !SETTINGS.vocals ? 0 : 1; s.buffer = buf; s.connect(g).connect(this.music);
+      g.gain.value = this.fullOf(role); s.buffer = buf; s.connect(g).connect(this.music);
       s.start(this.t0 + this.from, this.from);
       this.gains[role] = g; this.srcs.push(s);
     }
@@ -202,18 +204,20 @@ class Live {
     if (!g) return;
     const t = this.ac.currentTime;
     g.gain.cancelScheduledValues(t);
-    g.gain.setTargetAtTime(v * (g === this.gPart ? this.boost : 1), t, .012);
+    g.gain.setTargetAtTime(v * (g === this.gPart ? this.boost : this.fullOf(n.role)), t, .012);
   }
-  /* lead vocal on / off (setting; the backing vocals stay) */
-  setVocals(on) {
-    const g = this.gains && this.gains.vocals;
-    if (g && this.ac) { g.gain.cancelScheduledValues(this.ac.currentTime); g.gain.setTargetAtTime(on ? 1 : 0, this.ac.currentTime, .05); }
+  /* resting level of a stem: your part boosted, the voices silent when vocals are off */
+  fullOf(role) { return role === this.role ? this.boost : !SETTINGS.vocals && VOX_ROLES.includes(role) ? 0 : 1; }
+  /* vocals on / off mid-song (lead and backing vocals) */
+  setVocals() {
+    if (!this.ac) return;
+    for (const r of VOX_ROLES) { const g = this.gains[r]; if (g && g !== this.gPart) { g.gain.cancelScheduledValues(this.ac.currentTime); g.gain.setTargetAtTime(this.fullOf(r), this.ac.currentTime, .05); } }
   }
   /* a miss: the part drops for a moment and comes back on its own (it used to stay muted until your next hit) */
   duck(n, depth = .12, len = .45) {
     const g = n && n.kind === 'extra' ? this.gains[n.role] : this.gPart;
     if (!g || this.bo) return;
-    const full = g === this.gPart ? this.boost : 1, t = this.ac.currentTime;
+    const full = g === this.gPart ? this.boost : this.fullOf(n.role), t = this.ac.currentTime;
     g.gain.cancelScheduledValues(t);
     g.gain.setValueAtTime(g.gain.value, t);
     g.gain.setTargetAtTime(full * depth, t, .01);

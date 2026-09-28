@@ -175,6 +175,10 @@ scene('live', {
     window.removeEventListener('keyup', this.onKeyUp, true);
   },
   stopLoop() { cancelAnimationFrame(this.raf); this.raf = 0; },
+  onBack() {                                          // right click: like Esc (pause, or cancel the open menu / coach)
+    if (this.menu) this.menu({ code: 'Escape' });
+    else if (this.L && this.L.running && !this.L.finished && !this.L.paused) this.pauseMenu();   // not during the resume count
+  },
 
   intro() {
     const el = this.el;
@@ -454,7 +458,7 @@ scene('live', {
       e.preventDefault(); e.stopPropagation(); return;
     }
     const L = this.L;
-    if (down && (e.code === 'Escape' || e.code === 'KeyP')) { e.preventDefault(); e.stopPropagation(); if (!L.finished) this.pauseMenu(); return; }
+    if (down && (e.code === 'Escape' || e.code === 'KeyP')) { e.preventDefault(); e.stopPropagation(); if (!L.finished && !L.paused) this.pauseMenu(); return; }
     let lane = LANE_CODE[e.code];
     if (lane === undefined) return;
     e.preventDefault(); e.stopPropagation();
@@ -492,7 +496,7 @@ scene('live', {
     const close = () => { el.remove(); };
     const menu = (at = 0) => this.listMenu(el, Object.assign(items, { cancel: 0 }), n => {
       if (n === 2) { SETTINGS.speed = SETTINGS.speed >= 2 ? .6 : +(SETTINGS.speed + .2).toFixed(1); saveSettings(); $$('.ps-list span', el)[2].textContent = `노트 속도 ×${SETTINGS.speed.toFixed(1)}`; menu(2); return; }
-      if (n === 3) { SETTINGS.vocals = !SETTINGS.vocals; saveSettings(); L.setVocals(SETTINGS.vocals); $$('.ps-list span', el)[3].textContent = vo(); menu(3); return; }
+      if (n === 3) { SETTINGS.vocals = !SETTINGS.vocals; saveSettings(); L.setVocals(); $$('.ps-list span', el)[3].textContent = vo(); menu(3); return; }
       close();
       if (n === 0) this.resumeCount();
       else if (n === 1) { L.stop(); this.restart(); }
