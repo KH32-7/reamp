@@ -28,19 +28,22 @@ const MENU_BASE = [
   { t: 'FILE', h: '47초 파일 · 준비 중이에요', lock: true, fs: 2.6, ml: 1.2 },
   { t: 'SYSTEM', h: '설정 · 노트 속도 · 판정 조정 · 리듬 랩', go: 'lab', fs: 2.6, ml: .4 },
 ];
-const menuOpen = m => !m.open || !!(SAVE.game && SAVE.game.ep && SAVE.game.ep[m.open]);
+const menuOpen = m => !m.open || !!(W.g && W.g.ep && W.g.ep[m.open]);
 function storyLabel() {
   const p = SAVE.progress;
   if (!p || (p.story === 'prologue' && !p.done)) return '프롤로그 · 47초';
   if (p.story === 'year' && !p.done) return '1년 후 · 걸려 온 전화';
-  if (!SAVE.game || SAVE.game.v !== 2 || !SAVE.game.ep['1-1']) return 'CHAPTER 1 · 1-1 반쯤 꺼진 간판';
+  if (!W.g || !W.g.ep['1-1']) return SAVE.game && SAVE.game.phase && SAVE.game.phase !== 'event' ? 'CHAPTER 1 · 새 구조로 이어서 하기' : 'CHAPTER 1 · 1-1 반쯤 꺼진 간판';
   return nextEpLabel();
 }
 function goStory() {
   const p = SAVE.progress;
   if (!p || (p.story === 'prologue' && !p.done)) return Story.start('prologue', p && p.story === 'prologue' ? p.step : 0);
   if (p.story === 'year' && !p.done) return Story.start('year', p.step);
-  if (!SAVE.game || SAVE.game.v !== 2 || !SAVE.game.ep['1-1']) { W.init(); SAVE.progress = { story: 'year', step: 0, done: true }; writeSave(); return EPR.run('1-1'); }
+  if (!W.g || !W.g.ep['1-1']) {                     // first time in chapter 1, or an old week-1 save being carried over
+    W.init(); SAVE.progress = { story: 'year', step: 0, done: true }; writeSave();
+    if (!W.g.ep['1-1']) return EPR.run('1-1');
+  }
   go('chapter', { via: 'sweep' });
 }
 scene('menu', {
@@ -72,7 +75,7 @@ scene('menu', {
     });
   },
   enter() {
-    const el = this.el, g = SAVE.game;
+    const el = this.el, g = W.g;
     G.stack = [];
     MENU_BASE[0].h = storyLabel();
     $$('.menu span', el).forEach((sp, i) => sp.classList.toggle('lock', !!MENU_BASE[i].lock || !menuOpen(MENU_BASE[i])));
@@ -183,7 +186,7 @@ scene('band', {
     const m = MEMBERS.find(x => x.id === id);
     return m.part === G.inst ? 'SUB' : m.part;
   },
-  joined(id) { return id === 'you' || !!(SAVE.game && SAVE.game.joined.includes(id)); },
+  joined(id) { return id === 'you' || !!(W.g && W.g.joined.includes(id)); },
   /* only people who are actually in the band can be picked; empty seats stay on the plot as "?" */
   order() { return [...this.pms].filter(p => this.joined(p.dataset.id)).sort((a, b) => CH_ORDER.indexOf(this.slotOf(a.dataset.id)) - CH_ORDER.indexOf(this.slotOf(b.dataset.id))); },
   place(anim) {
@@ -219,7 +222,7 @@ scene('band', {
       img.classList.toggle('need', !hasYouArt());
       $('.b2-part', info).textContent = `LEADER · ${PARTS.find(q => q[0] === G.inst)[1]}`;
       $('.b2-name', info).textContent = G.name;
-      const g = SAVE.game || { hp: 80, mt: 40, fans: 0, money: 0 };
+      const g = W.g || { hp: 80, mt: 40, fans: 0, money: 0 };
       $('.lv', info).textContent = `팬 ${(g.fans || 0).toLocaleString('en-US')}`; $('.ht', info).textContent = ''; $('.st', info).textContent = `¥${(g.money || 0).toLocaleString('en-US')}`;
       $('.hp', info).style.width = g.hp + '%'; $('.mt', info).style.width = g.mt + '%'; $('.hpv', info).textContent = g.hp; $('.mtv', info).textContent = g.mt;
       $('.mt', info).classList.toggle('lo', g.mt < 30); $('.hp', info).classList.toggle('lo', g.hp < 40);
@@ -252,7 +255,7 @@ scene('band', {
     this.live = !!(arg && arg.live);
     const el = this.el;
     const n = this.pms.filter(p => this.joined(p.dataset.id)).length;
-    $('.b2-sub', el).textContent = `${(SAVE.game && SAVE.game.bandName) || '이름 없는 밴드'} · 멤버 ${n}명${n < 6 ? ` · 빈 자리 ${6 - n}` : ''}`;
+    $('.b2-sub', el).textContent = `${(W.g && W.g.bandName) || '이름 없는 밴드'} · 멤버 ${n}명${n < 6 ? ` · 빈 자리 ${6 - n}` : ''}`;
     $('.b2-ft', el).textContent = this.live ? '결성! ▶ 곡 선택' : '결성!';
     this.pms.forEach(p => { p.style.transition = 'none'; });
     this.place(false);
@@ -336,7 +339,7 @@ scene('member', {
     $('.mx-por img', el).src = `img/ill/${m.id}.webp`;
     const kj = $('.mx-kj', el); $('b', kj).textContent = KANJI[m.id][0]; $('small', kj).textContent = KANJI[m.id][1]; kj.dataset.n = KANJI[m.id][0].length;
     $('.mx-part', el).textContent = m.partName;
-    $('.mx-name b', el).textContent = m.id === 'koto' && SAVE.game && !SAVE.game.flags.kotoName ? 'kero_P' : m.name;
+    $('.mx-name b', el).textContent = m.id === 'koto' && W.g && !W.g.flags.kotoName ? 'kero_P' : m.name;
     $('.mx-age', el).textContent = `${m.age}세 · ${m.en}`;
     const lv = Math.max(1, W.lv(m.id)), c0 = W.mc(m.id);
     $('.mx-tag span', el).textContent = `${STAGES[lv]} · SYNC LV${W.syncLv(m.id)}`;
@@ -344,7 +347,7 @@ scene('member', {
     $('.mx-data .mt', el).style.width = c0.mt + '%';
     $('.mx-data .mt', el).classList.toggle('lo', c0.mt < 30);
     $('.mx-hearts', el).textContent = hearts(lv);
-    $('.mx-dots', el).innerHTML = MEMBERS.filter(x => !SAVE.game || SAVE.game.met[x.id]).map(x => `<i class="${x === m ? 'on' : ''}"></i>`).join('');
+    $('.mx-dots', el).innerHTML = MEMBERS.filter(x => !W.g || W.g.met[x.id]).map(x => `<i class="${x === m ? 'on' : ''}"></i>`).join('');
     this.body(false);
     this.seq(dir ? 0 : 150);
   },
@@ -376,7 +379,7 @@ scene('member', {
     stagger($$('.mx-tabs span', this.el), KF.fromLeft('-40%'), T.slam, 700, 60);
   },
   key(k) {
-    const known = MEMBERS.map((m, i) => i).filter(i => !SAVE.game || SAVE.game.met[MEMBERS[i].id]);
+    const known = MEMBERS.map((m, i) => i).filter(i => !W.g || W.g.met[MEMBERS[i].id]);
     if ((k === 'left' || k === 'right') && known.length > 1) { const j = known.indexOf(this.i); this.i = known[(j + (k === 'left' ? -1 : 1) + known.length) % known.length]; this.paint(k === 'left' ? -1 : 1); }
     else if (k === 'l1' || k === 'up') this.TL.move(-1);
     else if (k === 'r1' || k === 'down') this.TL.move(1);

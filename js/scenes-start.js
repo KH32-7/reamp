@@ -546,7 +546,7 @@ scene('adv', {
   openLog() {
     const el = document.createElement('div');
     el.className = 'backlog';
-    el.innerHTML = `<div class="bl-dim"></div><div class="bl-word">LOG</div><div class="bl-date"><b>${SAVE.game ? dateKo(SAVE.game.day) : '1년 전'}</b>${SAVE.game ? '나기사카' : '블루 아워 페스'}</div>
+    el.innerHTML = `<div class="bl-dim"></div><div class="bl-word">LOG</div><div class="bl-date"><b>${W.g ? dateKo(W.g.day) : '1년 전'}</b>${W.g ? '나기사카' : '블루 아워 페스'}</div>
       <div class="bl-list">${this.log.map(l => `<div class="bl-row${l.who === G.name ? ' me' : ''}"><b>${l.who}</b><span>${l.text}</span></div>`).join('')}</div>
       <div class="bl-hint">↕ 스크롤 · X 닫기</div>`;
     overlayRoot.appendChild(el);

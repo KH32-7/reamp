@@ -61,7 +61,7 @@ const isWeekend = day => dateOf(day).dow >= 5;
 /* ---------- affection: points → LV (LV0 = not met yet) ---------- */
 const LV_AT = [0, 6, 15, 28, 45];
 const WHO_NAME = { rui: '루이', ren: '렌', natsu: '나츠', rei: '레이', koto: '코토', serizawa: '세리자와 점장' };
-const nm = id => id === 'koto' && !(SAVE.game && SAVE.game.flags.kotoName) ? 'kero_P' : WHO_NAME[id] || id;   // Koto is a DM handle until she gives her name
+const nm = id => id === 'koto' && !(W.g && W.g.flags.kotoName) ? 'kero_P' : WHO_NAME[id] || id;   // Koto is a DM handle until she gives her name
 /* particles after a name: jo('렌', '와') → '렌과' */
 function jo(w, p) {
   w = String(w); const c = w.charCodeAt(w.length - 1), bat = c >= 0xAC00 && c <= 0xD7A3 && (c - 0xAC00) % 28 !== 0;
@@ -71,7 +71,7 @@ function jo(w, p) {
 const RANK_N = { F: -1, D: 0, C: 1, B: 2, A: 3, S: 4, SS: 5 };
 
 const W = {
-  get g() { return SAVE.game; },
+  get g() { const g = SAVE.game; return g && g.v === 2 ? g : null; },   // an old week-1 save is migrated by init(), never read as-is
   replay: false,                          // replaying a cleared episode: nothing changes
   fresh() {
     return { v: 2, day: 0, money: 8000, hp: 80, mt: 45, fans: 0, bond: {}, met: {}, joined: [], flags: {}, sync: {}, mc: {},
@@ -162,7 +162,7 @@ const lv = id => W.lv(id);
 
 /* date chip: the day, and how far the chapter's show is */
 function dayChip(o = {}) {
-  const g = SAVE.game;
+  const g = W.g;
   if (!g) return `<div class="datechip"><b>4월</b><span>1년 후<small>봄</small></span><i class="moon"></i><em>0dB</em></div>`;
   const day = o.day ?? g.day, t = dateOf(day), dl0 = typeof deadline === 'function' ? deadline() : null;
   const dl = dl0 && { ...dl0, days: dl0.days - (day - g.day) };

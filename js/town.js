@@ -552,6 +552,7 @@ scene('town', {
   },
   enter() {
     const el = this.el, g = W.g || W.init();
+    if (!SPOTS.some(s => spotOpen(s, g))) { toast('STORY에서 1-2 「케이블 감는 법」까지 보면 열려요'); return later(() => { G.busy = false; go('menu', { via: 'fade', push: false }); }, 300); }
     today();
     this.build(); this.stat();
     this.focus(this.L.i, true);
