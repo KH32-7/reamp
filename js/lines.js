@@ -78,7 +78,8 @@ function applyLines(csv) {
   let applied = 0, stale = 0, added = 0, removed = 0, anchor = null;
   const ops = [];                                              // inserts / removals, done last so indices stay valid
   for (const r of rows) {
-    const key = (r[K] || '').trim(), text = r[D] ?? '', who = W >= 0 ? (r[W] || '').trim() : '';
+    const key0 = (r[K] || '').trim(), text = r[D] ?? '', who = W >= 0 ? (r[W] || '').trim() : '';
+    const key = cells[key0] ? key0 : '';                      // a key the code doesn't have (e.g. a made-up "GREENROOM:17") is a new line too
     if (!key) {                                                // a new line under the row above
       if (!anchor || anchor.fixed || !text.trim()) continue;
       const base = anchor.arr[anchor.idx], line = { text };

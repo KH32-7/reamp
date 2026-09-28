@@ -36,9 +36,10 @@ if (cmd === 'export') {
   const rows = L.parseCSV(fs.readFileSync(arg, 'utf8'));
   const head = rows.shift(), col = n => head.findIndex(h => h.trim().startsWith(n));
   const K = col('key'), W = col('화자'), D = col('대사'), O = col('원문');
+  const known = new Set(L.lineCells().map(c => c.key));
   const byKey = {}, under = {}; let last = '^';
   for (const r of rows) {
-    const k = (r[K] || '').trim();
+    const k = known.has((r[K] || '').trim()) ? (r[K] || '').trim() : '';   // unknown keys are added lines
     if (k) { byKey[k] = r; last = k; } else if ((r[D] || '').trim()) (under[last] = under[last] || []).push(r);
   }
   const keep = [['key', '장면', '화자', '대사', '원문 (고치지 마세요)']];
