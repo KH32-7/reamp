@@ -3,23 +3,23 @@
 
 /* prologue · green room, 20 minutes before SIGNAL LOST goes on. Draft script. */
 const GREENROOM = [
-  { text: '블루 아워 페스, 서브 스테이지 대기실. 본 무대까지 20분.' },
-  { text: '문 너머로 앞 팀의 베이스가 벽을 타고 울린다.' },
-  { who: '하루', ch: 'haru', ex: 'neutral', text: '……야. 이거 소리 들려? 인이어.' },
-  { who: '@NAME', ch: 'haru', ex: 'neutral', text: '리허설 때 멀쩡했잖아.' },
-  { who: '하루', ch: 'haru', ex: 'smile', text: '그렇지. 그랬지.' },
-  { text: '하루는 아까부터 계속 인이어를 만지작거리고 있다. 뺐다가, 다시 끼웠다가.' },
-  { who: '소마', text: '또 그런다. 긴장하면 저거 만지는 버릇.' },
-  { who: '키리야', text: '첫 방송인데 긴장 안 하는 게 이상하지. 난 손이 차가워.' },
-  { who: '미카미', text: 'SIGNAL LOST 여러분, 10분 뒤 스탠바이입니다.' },
-  { who: '미카미', text: '방송은 걱정 마, 다 준비해 뒀으니까.' },
+  { text: '블루 아워 페스 서브 스테이지 대기실. 무대까지 20분 남았다.' },
+  { text: '앞 팀 베이스 소리가 벽을 타고 울린다.' },
+  { who: '하루', ch: 'haru', ex: 'neutral', text: '야, 인이어에서 소리 들려?' },
+  { who: '@NAME', ch: 'haru', ex: 'neutral', text: '리허설 때는 멀쩡했잖아.' },
+  { who: '하루', ch: 'haru', ex: 'smile', text: '그렇긴 하지.' },
+  { text: '하루는 아까부터 인이어를 뺐다 꼈다 하고 있다.' },
+  { who: '소마', text: '또 저런다. 쟤는 긴장하면 꼭 인이어를 만지더라.' },
+  { who: '키리야', text: '첫 방송인데 긴장 안 하는 게 더 이상하지. 난 손이 다 차가워.' },
+  { who: '미카미', text: 'SIGNAL LOST 여러분, 10분 뒤에 스탠바이 부탁드립니다.' },
+  { who: '미카미', text: '방송 쪽은 걱정 마세요. 저희가 다 준비해 뒀습니다.' },
   { who: '하루', ch: 'haru', ex: 'guilt', text: '……네.' },
-  { text: '삐—', fx: 'tinnitus' },
-  { text: '귀 안쪽에서 가느다란 소리가 길게 울린다. 방이 조금, 멀어진다.', fx: 'blur' },
-  { who: '하루', ch: 'haru', ex: 'surprise', text: '@NAME? 야. 괜찮아?' },
-  { choice: ['"괜찮아."', '"……괜찮아. 조금 긴장했나 봐."', '(고개를 끄덕인다)'], ch: 'haru', ex: 'surprise' },
-  { who: '하루', ch: 'haru', ex: ['smile', 'smile', 'neutral'], text: ['……그래. 너만 괜찮으면 돼.', '다행이다. 나만 그런 줄 알았네.', '……말로 해 줘. 그래야 믿지.'] },
-  { who: '하루', ch: 'haru', ex: 'smile', text: '가자. 오늘은 우리가 제일 크게 울리는 날이니까.' },
+  { text: '삐이이이.', fx: 'tinnitus' },
+  { text: '귀 안쪽에서 가늘고 높은 소리가 길게 이어진다. 주변 소리가 점점 멀어진다.', fx: 'blur' },
+  { who: '하루', ch: 'haru', ex: 'surprise', text: '@NAME, 야. 괜찮아?' },
+  { choice: ['"괜찮아."', '"응, 좀 긴장했나 봐."', '(고개를 끄덕인다)'], ch: 'haru', ex: 'surprise' },
+  { who: '하루', ch: 'haru', ex: ['smile', 'smile', 'neutral'], text: ['그래. 네가 괜찮으면 됐어.', '다행이다. 나만 떨리는 줄 알았네.', '말로 해. 그래야 믿지.'] },
+  { who: '하루', ch: 'haru', ex: 'smile', text: '가자. 오늘 제대로 한번 울려 보자.' },
 ];
 
 const STORY = {
@@ -28,7 +28,7 @@ const STORY = {
     { card: ['ONE YEAR LATER', '1년 후', '4월 · 나기사카'] },
     { adv: S_CALL, bg: 'river_night', place: '<b>나기사카</b> 강변 둑길 · 밤', date: '<div class="datechip"><b>4월</b><span>1년 후<small>밤</small></span><i class="moon"></i><em>SPRING</em></div>' },
     { op: true },
-    { card: ['CHAPTER 1', '제로 데시벨', '4월 1주 — 오픈 마이크까지 2주'], long: true },
+    { card: ['CHAPTER 1', '제로 데시벨', '4월 1주 · 오픈 마이크까지 2주'], long: true },
     { week: true },
   ],
   prologue: [
@@ -37,7 +37,7 @@ const STORY = {
     { live: { song: 'count4', scenario: 'tutorial', bg: 'stage_fest', skipResult: true } },
     { card: ['SET 2 / 2', '두 번째 곡', '생중계 중'] },
     { live: { song: 'hanpaku', scenario: 'incident', bg: 'stage_fest', noFail: true } },
-    { card: ['그 후', '— 몽타주 자리 —', '클립 확산 · 청력 검사 · 조용해진 단톡방 · 하루 전속 계약 · 옷장 속 기타 케이스'], long: true },
+    { card: ['그 후', '몽타주 자리', '클립 확산 · 청력 검사 · 조용해진 단톡방 · 하루 전속 계약 · 옷장 속 기타 케이스'], long: true },
   ],
 };
 

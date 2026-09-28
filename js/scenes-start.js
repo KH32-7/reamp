@@ -88,11 +88,11 @@ function motes(cv) {
 
 /* ---------------- LOADING ---------------- */
 const TIPS = [
-  '멤버의 멘탈이 낮으면 라이브 중 템포가 흔들립니다. 전날은 쉬게 해 주세요.',
-  'COVER 노트를 받아치면 그 멤버와의 유대가 크게 오릅니다.',
-  '새벽 2시에만 오는 DM이 있습니다.',
-  '에고서치는 적당히. 주인공의 멘탈도 닳습니다.',
-  '47초 파일의 조각은 루트마다 하나씩 흩어져 있습니다.',
+  '한 주에 할 수 있는 행동은 두 번이에요.',
+  'BAND와 PRACTICE는 언제 열어도 시간이 흐르지 않아요.',
+  '롱노트는 끝나기 조금 전까지만 누르고 있으면 성공이에요.',
+  '체력이 떨어지면 강변 둑길을 걸어 보세요.',
+  'COVER 노트를 치면 흔들리는 멤버를 받쳐 줄 수 있어요.',
 ];
 scene('loading', {
   title: '로딩', cls: 'ld', back: false,
@@ -177,12 +177,12 @@ scene('save', {
   title: '세이브 선택', cls: 'sv',
   html: `<div class="sv-floor"></div>${bigWord('LOAD', 'sv-word')}
     <div class="sv-slab"></div>
-    <div class="sv-head"><b>DATA SELECT</b><small>이어서 할 데이터를 고르세요 · 휠로 스크롤</small></div>
+    <div class="sv-head"><b>DATA SELECT</b><small>이어서 할 데이터를 고르세요. 휠로 넘길 수 있어요.</small></div>
     <div class="sv-list">${SLOTS.map((s, i) => s ? `
       <div class="sv-row"><span class="sv-no">${i + 1}</span><span class="sv-date">${s.date}</span><span class="sv-dow">${s.dow}</span>
         <span class="sv-time"><i class="moon ${s.moon}"></i>${s.time}</span><span class="sv-place">${s.place}</span>
         <span class="sv-lv">LV ${s.lv}</span><span class="sv-play">${s.play}</span><span class="sv-more">${s.ch} · ${s.band}</span></div>` : `
-      <div class="sv-row empty"><span class="sv-no">${i + 1}</span><span class="sv-new">NEW GAME</span><span class="sv-place">— 비어 있음 —</span></div>`).join('')}
+      <div class="sv-row empty"><span class="sv-no">${i + 1}</span><span class="sv-new">NEW GAME</span><span class="sv-place">비어 있음</span></div>`).join('')}
     </div>
     <div class="sv-prev"><div class="sv-thumb" data-asset="A03"><div class="sv-thumbimg"></div><span class="sv-thumb-lbl"></span></div><div class="sv-info"></div></div>
     ${backChip()}
@@ -206,7 +206,7 @@ scene('save', {
     $('.sv-thumb-lbl', el).textContent = s ? `${s.date} ${s.time} · ${s.place}` : 'NEW GAME';
     $('.sv-info', el).innerHTML = s
       ? `<b>${s.band}</b><span>${s.ch} · 플레이 ${s.play}</span><div class="sv-faces">${s.faces.map(f => `<img src="${icon(f)}" alt="">`).join('')}</div>`
-      : `<b>새로 시작</b><span>주인공을 만들고 프롤로그 「47초」부터 시작합니다</span>`;
+      : `<b>새로 시작</b><span>주인공을 만들고 프롤로그 「47초」부터 시작해요</span>`;
     if (!silent) { A($('.sv-thumb', el), [{ rotate: '8deg', opacity: .3, translate: '8% 0' }, { rotate: '3deg', opacity: 1, translate: '0 0' }], T.slam); A($('.sv-info', el), KF.fromRight('6%'), T.slam, { delay: 60 }); }
   },
   enter() {
@@ -216,7 +216,7 @@ scene('save', {
       const s = SLOTS[i];
       r.classList.toggle('empty', !s);
       r.innerHTML = s ? `<span class="sv-no">${i + 1}</span><span class="sv-date">${s.date}</span><span class="sv-dow">${s.dow}</span><span class="sv-time"><i class="moon ${s.moon}"></i>${s.time}</span><span class="sv-place">${s.place}</span><span class="sv-lv">LV ${s.lv}</span><span class="sv-play">${s.play}</span><span class="sv-more">${s.ch} · ${s.band}</span>`
-        : `<span class="sv-no">${i + 1}</span><span class="sv-new">NEW GAME</span><span class="sv-place">— 비어 있음 —</span>`;
+        : `<span class="sv-no">${i + 1}</span><span class="sv-new">NEW GAME</span><span class="sv-place">비어 있음</span>`;
     });
     this.S.set(0, true); this.S.paint(); this.preview(0, true);
     A($('.sv-word', el), KF.fromRight('20%'), 900, { e: EZ.soft });
@@ -242,7 +242,7 @@ const INSTS = [['GT', 'GUITAR', '기타'], ['BA', 'BASS', '베이스'], ['DR', '
 const CSTEPS = [
   { k: 'gender', t: '성별', q: '너는 누구였지?' },
   { k: 'name', t: '이름', q: '다들 너를 뭐라고 불렀지?' },
-  { k: 'inst', t: '악기', q: '그날, 무엇을 들고 있었지?' },
+  { k: 'inst', t: '악기', q: '그날 무슨 악기를 들고 있었지?' },
 ];
 scene('create', {
   title: '주인공 생성', cls: 'cr', via: 'sweep',
@@ -320,7 +320,7 @@ scene('create', {
         // freeze the choice now: the dialog closes before its callback runs, and a stray hover over the list
         // in that gap used to switch the instrument (e.g. KEYS saved as DRUMS)
         const prof = { name: G.name, gender: G.gender, inst: G.inst };
-        confirmBox(`${prof.name}, 맞아?`, `${prof.gender === 'm' ? '남' : '여'} · ${INSTS.find(x => x[0] === prof.inst)[2]} — SIGNAL LOST에서 네가 맡았던 파트`, () => {
+        confirmBox(`${prof.name}, 맞아?`, `${prof.gender === 'm' ? '남' : '여'} · ${INSTS.find(x => x[0] === prof.inst)[2]} · SIGNAL LOST에서 맡았던 파트`, () => {
           Object.assign(G, prof);
           SAVE.profile = prof; writeSave();
           Story.start('prologue');
@@ -335,16 +335,8 @@ scene('create', {
 });
 
 /* ---------------- ADV (dialogue) ---------------- */
-const SCRIPT = [
-  { who: '세리자와 점장', text: '…1년 만이네. 무대 뒤는 여전히 먼지 냄새 나지?' },
-  { who: '@NAME', text: '……여긴 왜 부르신 거예요.' },
-  { who: '???', text: '거기 서 있는 사람. 비켜줄래? 리허설 중이거든.', ch: 'rui', ex: 'neutral' },
-  { who: '아마네 루이', text: '……어? 너, 혹시 그 「47초」 영상의—', ch: 'rui', ex: 'surprise' },
-  { choice: ['"…맞아. 나야."', '"사람 잘못 봤어."', '(대답하지 않고 기타 케이스를 든다)'], ch: 'rui', ex: 'neutral' },
-  { who: '아마네 루이', text: ['……솔직하네. 그런 사람 싫지 않아.', '거짓말 못 하는 얼굴이야, 너.', '……말 대신 기타라. 재밌네.'], ch: 'rui', ex: ['smile', 'pout', 'smile'] },
-  { who: '아마네 루이', text: '오늘 밤 오픈 마이크, 자리 하나 비었어. 칠 줄 알면 올라와.', ch: 'rui', ex: 'neutral' },
-  { who: '아마네 루이', text: '……뭘 그렇게 봐. 딱히 너 기다린 거 아니거든.', ch: 'rui', ex: 'shy' },
-];
+/* default script when the dialogue scene opens without one (dev ?shot=adv): the week-1 arrival */
+const SCRIPT = null;
 /* which way each portrait looks: stand on the opposite side so they face the dialogue box */
 const FACING = { rui: 'r', natsu: 'r', koto: 'r', rei: 'r', ren: 'l', haru: 'l' };
 const SPEAKER = {   // face window uses the A10 face icons, so NPCs without portraits get a face too
@@ -382,7 +374,7 @@ scene('adv', {
   },
   enter(arg) {
     const o = arg && typeof arg === 'object' ? arg : {};
-    this.script = o.script || SCRIPT; this.next2 = o.next || null;
+    this.script = o.script || SCRIPT || S_ARRIVE; this.next2 = o.next || null;
     $('.adv-img', this.el).style.backgroundImage = `url(img/bg/${o.bg || 'backstage'}.webp)`;
     $('.adv-place', this.el).innerHTML = o.place || '<b>0dB</b> 백스테이지 · 밤';
     const dc = $('.datechip', this.el); if (o.date && dc) { const t = document.createElement('div'); t.innerHTML = o.date; dc.replaceWith(t.firstElementChild); }
@@ -528,12 +520,12 @@ scene('adv', {
       while (this.script[this.i + 1] && !this.script[this.i + 1].choice && !this.choosing) { this.i++; const l = this.script[this.i]; this.log.push({ who: l.who === '@NAME' ? G.name : l.who, text: Array.isArray(l.text) ? l.text[this.pick] : l.text }); }
       if (!this.choosing) this.next();
     } else if (c === 'log') this.openLog();
-    else if (c === 'menu') confirmBox('타이틀로 갈까요?', '이 장면은 처음부터 다시 시작됩니다.', () => { G.stack = []; go('title', { push: false }); });
+    else if (c === 'menu') confirmBox('타이틀로 갈까요?', '이 장면은 처음부터 다시 시작해요.', () => { G.stack = []; go('title', { push: false }); });
   },
   openLog() {
     const el = document.createElement('div');
     el.className = 'backlog';
-    el.innerHTML = `<div class="bl-dim"></div><div class="bl-word">LOG</div><div class="bl-date"><b>4/9</b>방과후</div>
+    el.innerHTML = `<div class="bl-dim"></div><div class="bl-word">LOG</div><div class="bl-date"><b>${SAVE.game ? `4월 ${SAVE.game.week}주` : '1년 전'}</b>${SAVE.game ? '나기사카' : '블루 아워 페스'}</div>
       <div class="bl-list">${this.log.map(l => `<div class="bl-row${l.who === G.name ? ' me' : ''}"><b>${l.who}</b><span>${l.text}</span></div>`).join('')}</div>
       <div class="bl-hint">↕ 스크롤 · X 닫기</div>`;
     overlayRoot.appendChild(el);

@@ -16,13 +16,13 @@ function scenarioEvents(sc, prep, part) {
   const hasHold = (prep.charts[part] || [[], []])[1].some(n => n.len);
   // カウント四つ (127bpm): vocals from bar 4, guitar comes in at bar 12, chorus 1 at 16, chorus 2 at 40, last chorus at 80
   if (sc === 'tutorial') return [
-    { type: 'tip', bar: -.5, text: `노트가 판정선에 닿는 순간 <b>${INST_INFO[part].keys}</b>`, dur: 5 },
-    ...(part === 'DR' ? [{ type: 'tip', bar: 4, text: '가로로 긴 주황 막대는 킥 — <b>SPACE</b>', dur: 4 }] : []),
-    ...(hasHold ? [{ type: 'tip', bar: 7, text: '길게 이어진 노트는 <b>끝까지 누르고 있기</b>', dur: 4 }] : []),
-    ...(prep.charts.EX ? [{ type: 'tip', bar: 9.5, text: '반짝이는 <b>보석 노트</b>는 코러스·퍼커션 — 어떤 악기든 같이 친다', dur: 4.5, c: '#FF8FC8' }] : []),
-    { type: 'tip', bar: 12.5, text: '하루가 흔들린다 — <b>COVER</b> 노트를 쳐서 받쳐 줘', dur: 4, c: '#2EC7F0' },
+    { type: 'tip', bar: -.5, text: `노트가 판정선에 닿을 때 <b>${INST_INFO[part].keys}</b>를 누르세요`, dur: 5 },
+    ...(part === 'DR' ? [{ type: 'tip', bar: 4, text: '가로로 긴 주황색 막대는 킥이에요. <b>SPACE</b>로 치세요', dur: 4 }] : []),
+    ...(hasHold ? [{ type: 'tip', bar: 7, text: '길게 이어진 노트는 <b>끝날 때까지 누르고 있으세요</b>', dur: 4 }] : []),
+    ...(prep.charts.EX ? [{ type: 'tip', bar: 9.5, text: '반짝이는 <b>보석 노트</b>는 코러스나 퍼커션 소리예요. 어느 악기로든 칠 수 있어요', dur: 4.5, c: '#FF8FC8' }] : []),
+    { type: 'tip', bar: 12.5, text: '하루가 흔들려요. <b>COVER</b> 노트를 쳐서 받쳐 주세요', dur: 4, c: '#2EC7F0' },
     { type: 'fumble', who: 'haru', bar: 14, beats: 4 },
-    { type: 'tip', bar: 15, text: '<b>EYE CONTACT</b> — 색이 칠해진 한 마디를 GREAT 이상으로', dur: 4, c: '#2EC7F0' },
+    { type: 'tip', bar: 15, text: '<b>EYE CONTACT</b> 구간이에요. 색칠된 한 마디를 GREAT 이상으로 치세요', dur: 4, c: '#2EC7F0' },
     { type: 'eye', who: 'haru', bar: 16, bars: 1, ex: 'pained' },
     { type: 'cameo', who: 'koto', bar: 24 },
     { type: 'eye', who: 'soma', bar: 40, bars: 1 },
@@ -43,7 +43,7 @@ function scenarioEvents(sc, prep, part) {
       { type: 'blackout', ...at, dur: bo },
     ];
   }
-  if (sc === 'practice') return [{ type: 'tip', bar: -.5, text: '1년 만의 연습 — <b>실패 없음</b>. 손이 기억하는 대로.', dur: 5 }];
+  if (sc === 'practice') return [{ type: 'tip', bar: -.5, text: '연습이라 <b>실패는 없어요</b>. 편하게 쳐 보세요.', dur: 5 }];
   // lab: an eye contact every 16 bars, rotating through the band
   return [0, 1, 2, 3].map(k => ({ type: 'eye', who: null, bar: 8 + k * 16, bars: 1, k }));
 }
@@ -76,7 +76,7 @@ scene('live', {
     <div class="lv-tip"></div>
     <div class="lv-banner"><b></b><small></small></div>
     <div class="lv-count"></div>
-    <div class="lv-bo"><div class="bo-timer">00:00</div><div class="bo-prompt"><b>RECOVER</b><small>노란 노트를 쳐서 소리를 되살려</small></div><div class="bo-err">NO SIGNAL</div></div>
+    <div class="lv-bo"><div class="bo-timer">00:00</div><div class="bo-prompt"><b>RECOVER</b><small>노란 노트를 쳐서 소리를 되살리세요</small></div><div class="bo-err">NO SIGNAL</div></div>
     <div class="lv-load"><div class="ld-ring"></div><b>SOUND CHECK</b><small class="ld-st"></small></div>
     <div class="lv-fail"><div class="fl-dim"></div><div class="fl-word">SILENCE</div><div class="fl-q">관객이 조용해졌다.</div><div class="fl-list"><span>다시 한다</span><span>조금 쉽게 다시 한다</span><span>받아들인다</span></div></div>`,
   init(el) {
@@ -247,14 +247,14 @@ scene('live', {
       const row = $(`.lv-prow[data-id="${d.m.id}"]`, el);
       if (row) { row.classList.add('warn'); A(row, [{ translate: '-6px 0' }, { translate: '6px 0' }, { translate: '0 0' }], 200, { it: 3 }); setTimeout(() => row.classList.remove('warn'), 3000); }
     } else if (type === 'cover') {
-      if (d.k < 3) this.banner('COVER!', `${d.m ? d.m.en : ''} 파트를 받쳤다 · SYNC +`, d.m && d.m.c, true);
+      if (d.k < 3) this.banner('COVER!', `${d.m ? d.m.en : ''} 파트를 받쳐 줬다 · SYNC +`, d.m && d.m.c, true);
     } else if (type === 'eyeIn') this.cutin(d.w);
     else if (type === 'eyeOut') { if (d.ok) this.banner('SYNC UP!', `${d.w.en}와 눈이 맞았다`, d.w.c); }
     else if (type === 'milestone') this.banner(`${d.combo} COMBO`, '', null, true);
     else if (type === 'amp') { el.classList.toggle('amp', d.on); if (d.on) this.banner('AMP UP!', '관객이 달아올랐다', '#FF4FA0'); }
     else if (type === 'tip') this.tip(d);
     else if (type === 'cameo') this.cameo(d.who);
-    else if (type === 'silence') { el.classList.add('silence'); this.banner('SILENCE', `노란 노트 ${d.of}개 중 ${d.need}개를 쳐서 되살려`, '#FFE14A'); }
+    else if (type === 'silence') { el.classList.add('silence'); this.banner('SILENCE', `노란 노트 ${d.of}개 중 ${d.need}개를 치면 소리가 돌아온다`, '#FFE14A'); }
     else if (type === 'recover') { el.classList.remove('silence'); this.banner('RE:AMP!', '소리가 돌아왔다', '#D7FF3A'); A(el, [{ filter: 'brightness(2)' }, { filter: 'brightness(1)' }], 400); }
     else if (type === 'fail') this.failMenu();
     else if (type === 'memberDrop') this.dropCut(d.m);
@@ -442,7 +442,7 @@ scene('live', {
 
 /* ================= RESULT ================= */
 /* shapes → big type → data → the band; commands in the main-menu grammar. Red only on the chosen command. */
-const RCMD = [['RETRY', '같은 곡을 처음부터 다시'], ['NEXT', '다음으로']];
+const RCMD = [['RETRY', '같은 곡을 처음부터 다시 해요'], ['NEXT', '다음으로 넘어가요']];
 scene('result', {
   cls: 'rs2', back: false,
   html: `<div class="water"></div><div class="word" aria-hidden="true">RESULT</div>
@@ -544,7 +544,7 @@ scene('lab', {
   html: `${bgImg('studio_night', 'lab-img')}<div class="lab-tint"></div>${bigWord('LAB', 'lab-word')}
     <div class="lab-head"><b>RHYTHM <em>LAB</em></b><small>리듬 엔진 테스트 · 스템을 올리면 자동으로 채보합니다</small></div>
     <div class="lab-songs"></div>
-    <div class="lab-drop"><input type="file" multiple accept="audio/*" hidden><b>＋ 스템 파일 올리기</b><small>guitar · bass · drums · keys (+ vocals, lead) — 파일 이름으로 자동 분류 · 여기로 끌어다 놓아도 됩니다</small></div>
+    <div class="lab-drop"><input type="file" multiple accept="audio/*" hidden><b>＋ 스템 파일 올리기</b><small>guitar · bass · drums · keys (+ vocals, lead) · 파일 이름으로 자동 분류해요. 여기로 끌어다 놓아도 돼요</small></div>
     <div class="lab-opts"></div>
     <div class="lab-info"><div class="li-h">ANALYSIS</div><div class="li-body">곡을 고르면 분석합니다</div><canvas class="li-graph" width="520" height="120"></canvas></div>
     <div class="lab-play" data-tap="ok"><span class="unskew">PLAY ▶</span></div>

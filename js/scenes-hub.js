@@ -2,15 +2,15 @@
 'use strict';
 const MEMBERS = [
   { id: 'rui', name: '아마네 루이', en: 'RUI', part: 'VO', partName: 'VOCAL', sub: '코러스', c: 'var(--c-rui)', hp: 80, mt: 62, lv: 2, face: 'rui_mask', face2: 'rui_smile', age: 19,
-    hook: '가면을 쓰고 노래하는 방출된 전 아이돌 연습생.', like: '새벽 3시의 DM, 탄산수', hate: '평가, 칭찬(을 받는 척)', line: '…딱히 너 들으라고 부른 거 아니거든.' },
+    hook: '아이돌 연습생 시절 평가 무대에서 목소리가 안 나와 방출됐다. 그 뒤로는 가면을 써야 노래할 수 있다.', like: '탄산수, 늦은 밤 편의점', hate: '평가받는 자리', line: '너 들으라고 부른 거 아니거든.' },
   { id: 'natsu', name: '이부키 나츠', en: 'NATSU', part: 'GT', partName: 'GUITAR', sub: '세컨드 기타', c: 'var(--c-natsu)', hp: 95, mt: 90, lv: 1, face: 'natsu_grin', face2: 'natsu_face', age: 16,
-    hook: '주인공을 동경하는 고1 후배. 텐션 폭주, 실력은 초보.', like: '선배, 스티커, 편의점 신상', hate: '기다리는 것', line: '선배! 오늘 코드 세 개나 외웠어요!' },
+    hook: '상점가 헌옷가게에서 알바하는 고1. 「47초」 영상을 보고 기타를 시작했다. 의욕은 넘치는데 실력은 아직 초보다.', like: '기타 연습, 편의점 신상', hate: '가만히 기다리는 것', line: '선배! 오늘 F 코드 소리 났어요!' },
   { id: 'koto', name: '히나타 코토', en: 'KOTO', part: 'BA', partName: 'BASS', sub: '신스', c: 'var(--c-koto)', hp: 34, mt: 58, lv: 3, face: 'koto_neutral', face2: 'koto_phone', age: 17,
-    hook: '방에서 나오지 않는 천재 보카로P. 대화는 SNS로만.', like: '개구리, 밤, 직캠 원본', hate: '전화, 햇빛', line: '(DM) …보고 있어요. 계속.' },
+    hook: '집 밖으로 거의 나오지 않는 보카로P. 사람과는 PULSE DM으로만 이야기한다. 프로필 사진은 개구리다.', like: '개구리, 밤 작업', hate: '전화 통화', line: '(DM) 답장 안 하셔도 돼요.' },
   { id: 'ren', name: '쿠로사키 렌', en: 'REN', part: 'DR', partName: 'DRUMS', sub: '퍼커션', c: 'var(--c-ren)', hp: 70, mt: 22, lv: 1, face: 'ren_smile', face2: 'ren_drum', age: 21,
-    hook: '키 186cm, 험악한 인상의 라멘집 알바생. 실제로는 다정하다.', like: '차슈, BPM, 새벽 시장', hate: '가게 빚 이야기', line: '…너랑 있으면 심박이 140이야. 템포 얘기다.' },
+    hook: '아버지 라멘집 「멘야 도돈」에서 일한다. 키 186cm에 인상이 험악하지만 말투는 조용하다. 드럼은 이번 봄까지만 치기로 했다.', like: '정박, 새벽 시장', hate: '가게 빚 이야기', line: '여기서 박자 얘기할 사람이 별로 없거든요.' },
   { id: 'rei', name: '시라유키 레이', en: 'REI', part: 'KEY', partName: 'KEYS', sub: '코러스', c: 'var(--c-rei)', hp: 66, mt: 84, lv: 1, face: 'rei_smirk', face2: 'rei_smirk', age: 20,
-    hook: '음대를 자퇴한 재벌가 딸. 완벽주의자에 독설가.', like: '정확한 템포, 홍차', hate: '크레딧 없는 편곡', line: '틀린 음이 세 개. 다음엔 두 개로.' },
+    hook: '음대를 자퇴했다. 말이 날카롭고, 박자가 틀리면 그냥 넘어가지 못한다. 레코드샵 「사이드B」 단골이다.', like: '정확한 템포, 클래식 악보', hate: '크레딧에서 빠진 편곡', line: '버릇이면 고쳐.' },
 ];
 const hearts = lv => '♥'.repeat(lv) + '♡'.repeat(5 - lv);
 const STAGES = ['', '밴드 동료', '친구', '신경 쓰이는 사이', '특별한 사람', '듀엣'];
@@ -20,13 +20,13 @@ const STAGES = ['', '밴드 동료', '친구', '신경 쓰이는 사이', '특�
    The other entries stay on the menu so it reads whole, and say they're on the way. */
 const MENU_BASE = [
   { t: 'TODAY', h: '', go: 'today', fs: 2.9, ml: .4 },
-  { t: 'PRACTICE', h: '리듬 랩 · 곡·악기·난이도를 골라 자유 연습', go: 'lab', fs: 2.5, ml: .9 },
+  { t: 'PRACTICE', h: '리듬 랩 · 곡, 악기, 난이도를 골라서 자유롭게 연습해요', go: 'lab', fs: 2.5, ml: .9 },
   { t: 'BAND', h: '멤버 · 컨디션 · 무대 배치', go: 'band', fs: 2.8, ml: .3 },
-  { t: 'PULSE', h: 'SNS · DM — 준비 중', lock: true, fs: 3.2, ml: .1 },
-  { t: 'FILE', h: '47초 파일 · 진실 조각 — 준비 중', lock: true, fs: 2.6, ml: 1.2 },
-  { t: 'SHOP', h: '의상 · 악기 스킨 — 준비 중', lock: true, fs: 2.4, ml: .6 },
-  { t: 'ALBUM', h: 'CG · 컷신 · 엔딩 — 준비 중', lock: true, fs: 2.6, ml: 1.0 },
-  { t: 'SYSTEM', h: '설정 — 준비 중 · 노트 속도와 판정 오프셋은 리듬 랩에서', lock: true, fs: 2.6, ml: .4 },
+  { t: 'PULSE', h: 'SNS · DM · 준비 중이에요', lock: true, fs: 3.2, ml: .1 },
+  { t: 'FILE', h: '47초 파일 · 준비 중이에요', lock: true, fs: 2.6, ml: 1.2 },
+  { t: 'SHOP', h: '의상 · 악기 스킨 · 준비 중이에요', lock: true, fs: 2.4, ml: .6 },
+  { t: 'ALBUM', h: 'CG · 컷신 · 엔딩 · 준비 중이에요', lock: true, fs: 2.6, ml: 1.0 },
+  { t: 'SYSTEM', h: '설정 · 준비 중이에요. 노트 속도와 판정 조정은 리듬 랩에서 할 수 있어요', lock: true, fs: 2.6, ml: .4 },
 ];
 scene('menu', {
   title: '메인 메뉴', cls: 'mm pm-menu', back: false, via: 'ink',
@@ -211,7 +211,7 @@ scene('band', {
       $('.lv', info).textContent = `무대감 ${g.stage}`; $('.ht', info).textContent = ''; $('.st', info).textContent = `테크닉 ${g.tech}`;
       $('.hp', info).style.width = g.hp + '%'; $('.mt', info).style.width = g.mt + '%'; $('.hpv', info).textContent = g.hp; $('.mtv', info).textContent = g.mt;
       $('.mt', info).classList.toggle('lo', g.mt < 30); $('.hp', info).classList.toggle('lo', g.hp < 40);
-      $('.b2-line', info).textContent = this.order().length > 1 ? '같이 설 사람이 생겼다. 그게 아직 조금 어색하다.' : '케이블은 다시 감을 수 있게 됐다. 무대는, 아직.';
+      $('.b2-line', info).textContent = this.order().length > 1 ? '같이 무대에 설 사람이 생겼다. 아직은 좀 어색하다.' : '케이블은 다시 감게 됐지만, 무대에 설 자신은 아직 없다.';
       $('.b2-go', info).hidden = true;
     } else {
       const m = MEMBERS.find(q => q.id === id), slot = this.slotOf(id);
@@ -222,7 +222,7 @@ scene('band', {
       $('.lv', info).textContent = `LV ${m.lv}`; $('.ht', info).textContent = hearts(m.lv); $('.st', info).textContent = STAGES[m.lv];
       $('.hp', info).style.width = m.hp + '%'; $('.mt', info).style.width = m.mt + '%'; $('.hpv', info).textContent = m.hp; $('.mtv', info).textContent = m.mt;
       $('.mt', info).classList.toggle('lo', m.mt < 30); $('.hp', info).classList.toggle('lo', m.hp < 40);
-      $('.b2-line', info).textContent = m.mt < 30 ? '(멘탈 22%) 오늘은 템포가 달릴 것 같아. 전날 쉬게 해 줘.' : m.line;
+      $('.b2-line', info).textContent = m.mt < 30 ? '오늘은 컨디션이 안 좋아 보인다.' : m.line;
       $('.b2-go', info).hidden = false;
     }
     cut.style.setProperty('--c', c); info.style.setProperty('--c', c);
@@ -271,7 +271,7 @@ scene('band', {
       this.select(this.order().findIndex(p => p.dataset.id === cur), false);
     } else if (k === 'ok') {
       const id = this.order()[this.sel].dataset.id;
-      if (id === 'you') toast('내 파트는 Q / E로 바꾸고, Y로 저장해요');
+      if (id === 'you') toast('Q / E로 내 파트를 바꾸고, Y를 누르면 저장돼요');
       else go('member', { arg: MEMBERS.findIndex(m => m.id === id), via: 'slam' });
     } else if (k === 'y') {
       pop($('.b2-form', this.el));
