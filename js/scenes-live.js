@@ -22,8 +22,8 @@ function pickLength(song, cb) {
   modal({ title: '얼마나 칠까요?', body: '하이라이트는 2절 후렴까지 치고 끝나요.', buttons: [{ t: hl, fn: () => cb('hl'), cancel: true }, { t: full, fn: () => cb('full') }] });
 }
 
-/* tutorial coach: waiting on the UI prototype review; preview in the game with ?coach=1 */
-const COACH_ON = QS.get('coach') === '1';
+/* tutorial coach (approved in the UI prototype); ?coach=0 falls back to the old timed tips */
+const COACH_ON = QS.get('coach') !== '0';
 /* tutorial: what each part of the live screen is, one at a time, before the count-in */
 const COACH_PRE = part => [
   { spot: 'hw', t: '노트', b: `노트가 위에서 내려와요. 판정선에 닿는 순간 같은 줄의 키를 누르세요. 키는 왼쪽부터 <b>${INST_INFO[part].keys}</b>예요.` },
@@ -188,7 +188,7 @@ scene('live', {
     A($('.lv-inst', el), KF.fromBottom('200%'), T.char, { delay: 300 });
     A(this.cv, [{ clipPath: 'inset(100% 0 0 0)', opacity: .2 }, { clipPath: 'inset(0 0 0 0)', opacity: 1 }], 700, { e: EZ.wipe, delay: 200 });
   },
-  /* 3 · 2 · 1 · GO, about a second apart and on the beat (the engine puts the sticks on the same times) */
+  /* 3 · 2 · 1 · GO, about half a second apart and on the beat (the engine puts the sticks on the same times) */
   countdown() {
     const L = this.L, c = $('.lv-count', this.el), { step, at } = L.cd;
     [3, 2, 1, 'GO!'].forEach((n, i) => {
@@ -207,7 +207,8 @@ scene('live', {
     let i = -1;
     const finish = () => {
       this.menu = null; cc.onclick = null;
-      A(cc, [{ opacity: 1 }, { opacity: 0 }], 220, { fill: 'forwards' }).finished.then(() => { cc.classList.remove('on'); cc.getAnimations().forEach(a => a.cancel()); done && done(); });
+      A(cc, [{ opacity: 1 }, { opacity: 0 }], 220, { fill: 'forwards' });
+      setTimeout(() => { cc.classList.remove('on'); cc.getAnimations().forEach(a => a.cancel()); done && done(); }, 230);   // a timer, not .finished: that stalls in a hidden tab
     };
     const next = () => {
       if (++i >= steps.length) return finish();

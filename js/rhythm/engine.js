@@ -134,8 +134,8 @@ class Live {
   start(lead = 2.4) {
     const ac = this.ac = AU.get();
     const first = this.notes.length ? this.notes[0].t : 0;
-    // count-in: 3 · 2 · 1 about a second apart, locked to the tempo; GO lands on the first beat at or after the start
-    const tm = this.tm, step = this.beat * Math.max(1, Math.round(.9 / this.beat));
+    // count-in: 3 · 2 · 1 on the beat (about half a second apart); GO lands on the first beat at or after the start
+    const tm = this.tm, step = this.beat * Math.max(1, Math.round(.5 / this.beat));
     const g0 = tm.offset + Math.ceil((this.from - .05 - tm.offset) / this.beat) * this.beat;
     lead = Math.max(lead, 2.2 - (first - this.from) + .6, 3 * step + .5 - (g0 - this.from));
     this.t0 = ac.currentTime + lead - this.from;
