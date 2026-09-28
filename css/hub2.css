@@ -98,3 +98,26 @@
 /* main menu: entries this build can't open yet */
 .mm .menu span.lock{opacity:.4}
 .mm .menu span.lock.sel{opacity:1}
+
+/* ================= v0.8 · one year later + week 1 ================= */
+/* band setup: seats nobody has taken yet */
+.bd2 .pm2.vacant{cursor:default}
+.bd2 .pm2.vacant .ring{border:4px dashed rgba(169,241,255,.55);background:rgba(4,11,46,.6)}
+.bd2 .pm2.vacant .ring img{display:none}
+.bd2 .pm2.vacant .ring::after{content:"?";position:absolute;inset:0;display:grid;place-items:center;font-family:var(--display);font-size:40px;color:var(--pale)}
+.bd2 .pm2.vacant .tag{background:rgba(4,11,46,.6);color:var(--pale)}
+.bd2 .pm2.vacant .tag small{color:rgba(169,241,255,.6)}
+.bd2 .pm2.vacant .warn{display:none}
+/* dialogue: the signal line that cues the OP */
+.adv .adv-sig{position:absolute;inset:0;z-index:30;pointer-events:none;opacity:0}
+.adv .adv-sig i{position:absolute;left:-5%;right:-5%;top:50%;height:4px;margin-top:-2px;background:#fff;box-shadow:0 0 12px 3px #4FE3FF,0 0 40px 10px rgba(79,227,255,.5)}
+/* OP placeholder */
+.op0 .s{background:#000;overflow:hidden}
+.op0 .o0-line{position:absolute;left:0;right:0;top:50%;height:4px;margin-top:-2px;background:#fff;box-shadow:0 0 12px 3px #4FE3FF,0 0 50px 12px rgba(79,227,255,.45)}
+.op0 .o0-cap{position:absolute;left:0;right:0;top:56%;display:grid;justify-items:center;gap:8px}
+.op0 .o0-cap b{font-family:var(--display);font-weight:400;font-size:40px;letter-spacing:.3em;color:#fff}
+.op0 .o0-cap small{font-family:var(--pixel);font-size:14px;letter-spacing:.2em;color:rgba(169,241,255,.7)}
+.op0 .o0-skip{position:absolute;right:48px;bottom:40px;font-family:var(--pixel);font-size:14px;color:rgba(234,240,255,.5)}
+/* town map: places already visited this week; who you met on the result popup */
+.tm .tm-row.used{opacity:.4}
+.act-res .ar-meet{font-weight:700;padding:.2em .6em;border-left:.25em solid var(--cobalt);background:rgba(47,75,255,.08)}

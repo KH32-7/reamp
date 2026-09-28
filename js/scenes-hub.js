@@ -19,7 +19,7 @@ const STAGES = ['', '밴드 동료', '친구', '신경 쓰이는 사이', '특�
    What this build can reach: TODAY replays the prologue, PRACTICE is the Rhythm Lab, BAND is the stage plot.
    The other entries stay on the menu so it reads whole, and say they're on the way. */
 const MENU_BASE = [
-  { t: 'TODAY', h: '프롤로그 「47초」 다시 보기', go: 'story', fs: 2.9, ml: .4 },
+  { t: 'TODAY', h: '', go: 'today', fs: 2.9, ml: .4 },
   { t: 'PRACTICE', h: '리듬 랩 · 곡·악기·난이도를 골라 자유 연습', go: 'lab', fs: 2.5, ml: .9 },
   { t: 'BAND', h: '멤버 · 컨디션 · 무대 배치', go: 'band', fs: 2.8, ml: .3 },
   { t: 'PULSE', h: 'SNS · DM — 준비 중', lock: true, fs: 3.2, ml: .1 },
@@ -35,10 +35,10 @@ scene('menu', {
     <i class="shard" style="left:30%;top:18%;width:3%;height:5%"></i>
     <i class="shard" style="left:36%;top:72%;width:2%;height:4%;background:var(--lime)"></i>
     <i class="shard" style="left:12%;top:80%;width:2.5%;height:4%"></i>
-    <div class="wallet">¥38,400<small>current wallet</small></div>
+    <div class="wallet"><span class="wl-n"></span><small>current wallet</small></div>
     ${dateChip()}
     <div class="menu">${MENU_BASE.map(m => `<span class="${m.lock ? 'lock' : ''}" style="font-size:${m.fs}em;margin-left:${m.ml}em"><i class="mt">${m.t}</i></span>`).join('')}</div>
-    <div class="party" data-asset="A10">${MEMBERS.filter(m => m.id !== 'natsu').map(m => `<div class="pm" style="--c:${m.c}"><img src="${icon(m.face)}" alt=""><div class="bars"><i><b style="width:${m.hp}%"></b></i><i class="m"><b style="width:${m.mt}%"></b></i></div></div>`).join('')}</div>
+    <div class="party" data-asset="A10"></div>
     <div class="cmd"><span class="cmd-t"></span><small>COMMAND</small></div>
     <div class="keys2"><span data-tap="ok"><i>Z</i>결정</span><span data-tap="back"><i>X</i>타이틀</span></div>`,
   init(el) {
@@ -57,8 +57,15 @@ scene('menu', {
     });
   },
   enter() {
-    const el = this.el;
+    const el = this.el, g = SAVE.game;
     G.stack = [];
+    MENU_BASE[0].h = todayLabel();
+    $('.cmd-t', el).textContent = MENU_BASE[this.L.i].h;
+    $('.wl-n', el).textContent = `¥${(g ? g.money : 0).toLocaleString('en-US')}`;
+    const dc = $('.datechip', el); if (dc) { const t = document.createElement('div'); t.innerHTML = weekChip(); dc.replaceWith(t.firstElementChild); }
+    // the party is who's actually with you: for now, just you
+    const team = [{ face: 'you', c: '#4FE3FF', hp: g ? g.hp : 80, mt: g ? g.mt : 40 }, ...(g ? g.joined : []).map(id => ({ ...MEMBERS.find(m => m.id === id), hp: 70, mt: 60 }))];
+    $('.party', el).innerHTML = team.map(m => `<div class="pm" style="--c:${m.c}"><img src="${icon(m.face)}" alt=""><div class="bars"><i><b style="width:${m.hp}%"></b></i><i class="m"><b style="width:${m.mt}%"></b></i></div></div>`).join('');
     $('.hero-img img', el).src = `img/ill/fall_${G.gender === 'f' ? 'f' : 'm'}.webp`;
     A($('.hero-img', el), [{ translate: '0 -30%', opacity: 0 }, { translate: '0 0', opacity: 1 }], T.char * 1.3, { delay: 150 });
     A($('.vword', el), KF.fromTop('-20%'), T.char, { delay: 150 });
@@ -73,7 +80,7 @@ scene('menu', {
     A($('.cmd', el), KF.fromRight('30%'), T.char, { delay: 700 });
     if (!G.seenMenuTip) {
       G.seenMenuTip = true;
-      later(() => tutorial({ title: '메인 메뉴', body: '↑↓ 또는 마우스 휠로 고르고 <b>Z/Enter</b>나 클릭으로 들어갑니다. <b>X/Esc</b>는 뒤로.<br>지금은 <b>TODAY</b>(프롤로그), <b>PRACTICE</b>(리듬 랩), <b>BAND</b>(밴드 셋업)를 쓸 수 있어요.', asset: 'A20' }), 1600);
+      later(() => tutorial({ title: '메인 메뉴', body: '↑↓ 또는 마우스 휠로 고르고 <b>Z/Enter</b>나 클릭으로 들어갑니다. <b>X/Esc</b>는 뒤로.<br><b>TODAY</b>로 이야기와 이번 주를 이어가요. <b>PRACTICE</b>(리듬 랩)와 <b>BAND</b>는 시간을 쓰지 않아요.', asset: 'A20' }), 1600);
     }
   },
   key(k) {
@@ -82,7 +89,12 @@ scene('menu', {
     else if (k === 'ok') {
       const m = MENU_BASE[this.L.i];
       if (m.lock) { shake(this.L.el); toast('아직 준비 중이에요'); }
-      else if (m.go === 'story') Story.start('prologue');
+      else if (m.go === 'today') {
+        if (SAVE.progress && SAVE.progress.story === 'year' && !SAVE.progress.done) Story.start('year', SAVE.progress.step);
+        else if (SAVE.game) W.resume();
+        else if (SAVE.progress && SAVE.progress.done) Story.start('year');
+        else Story.start('prologue', SAVE.progress ? SAVE.progress.step : 0);
+      }
       else go(m.go, { arg: m.arg });
     } else if (k === 'y') toast('PULSE는 아직 준비 중이에요');
     else if (k === 'back') confirmBox('타이틀로 돌아갈까요?', '진행 상황은 자동으로 저장되어 있어요.', () => { G.stack = []; go('title', { via: 'iris', push: false }); });
@@ -149,6 +161,7 @@ scene('band', {
     this.pms = $$('.pm2', el);
     this.pms.forEach(p => p.addEventListener('click', e => {
       e.stopPropagation();
+      if (p.classList.contains('vacant')) return toast('아직 비어 있는 자리예요');
       const n = this.order().indexOf(p);
       if (n === this.sel) this.key('ok'); else this.select(n);
     }));
@@ -158,14 +171,20 @@ scene('band', {
     const m = MEMBERS.find(x => x.id === id);
     return m.part === G.inst ? 'SUB' : m.part;
   },
-  order() { return [...this.pms].sort((a, b) => CH_ORDER.indexOf(this.slotOf(a.dataset.id)) - CH_ORDER.indexOf(this.slotOf(b.dataset.id))); },
+  joined(id) { return id === 'you' || !!(SAVE.game && SAVE.game.joined.includes(id)); },
+  /* only people who are actually in the band can be picked; empty seats stay on the plot as "?" */
+  order() { return [...this.pms].filter(p => this.joined(p.dataset.id)).sort((a, b) => CH_ORDER.indexOf(this.slotOf(a.dataset.id)) - CH_ORDER.indexOf(this.slotOf(b.dataset.id))); },
   place(anim) {
     const el = this.el;
     this.pms.forEach(p => {
       const id = p.dataset.id, slot = this.slotOf(id), [x, y] = SLOT[slot], m = MEMBERS.find(q => q.id === id);
+      const vacant = !this.joined(id);
       p.style.left = x + '%'; p.style.top = y + '%';
       p.classList.toggle('sub', slot === 'SUB');
-      $('.pt', p).textContent = slot === 'SUB' ? `SUB · ${m.sub}` : slot;
+      p.classList.toggle('vacant', vacant);
+      p.hidden = vacant && slot === 'SUB';                      // your part is yours; no empty seat beside you
+      $('.pt', p).textContent = vacant ? slot : slot === 'SUB' ? `SUB · ${m.sub}` : slot;
+      if (m) $('small', p).textContent = vacant ? '모집 중' : m.en;
     });
     const you = $('.pm2.you', el);
     $('img', you).src = icon('you'); $('small', you).textContent = G.name;
@@ -188,10 +207,11 @@ scene('band', {
       img.classList.toggle('need', !hasYouArt());
       $('.b2-part', info).textContent = `LEADER · ${PARTS.find(q => q[0] === G.inst)[1]}`;
       $('.b2-name', info).textContent = G.name;
-      $('.lv', info).textContent = 'LV 12'; $('.ht', info).textContent = ''; $('.st', info).textContent = '주인공';
-      $('.hp', info).style.width = '80%'; $('.mt', info).style.width = '64%'; $('.hpv', info).textContent = 80; $('.mtv', info).textContent = 64;
-      $('.mt', info).classList.remove('lo'); $('.hp', info).classList.remove('lo');
-      $('.b2-line', info).textContent = '1년 만의 무대. 인이어를 끼면 아직도 손끝이 차다.';
+      const g = SAVE.game || { hp: 80, mt: 40, stage: 5, tech: 30 };
+      $('.lv', info).textContent = `무대감 ${g.stage}`; $('.ht', info).textContent = ''; $('.st', info).textContent = `테크닉 ${g.tech}`;
+      $('.hp', info).style.width = g.hp + '%'; $('.mt', info).style.width = g.mt + '%'; $('.hpv', info).textContent = g.hp; $('.mtv', info).textContent = g.mt;
+      $('.mt', info).classList.toggle('lo', g.mt < 30); $('.hp', info).classList.toggle('lo', g.hp < 40);
+      $('.b2-line', info).textContent = this.order().length > 1 ? '같이 설 사람이 생겼다. 그게 아직 조금 어색하다.' : '케이블은 다시 감을 수 있게 됐다. 무대는, 아직.';
       $('.b2-go', info).hidden = true;
     } else {
       const m = MEMBERS.find(q => q.id === id), slot = this.slotOf(id);
@@ -218,7 +238,8 @@ scene('band', {
   enter(arg) {
     this.live = !!(arg && arg.live);
     const el = this.el;
-    $('.b2-sub', el).textContent = this.live ? '라이브 전 편성 · SIGNAL LOST' : 'NO SIGNAL · 6인 편성';
+    const n = this.pms.filter(p => this.joined(p.dataset.id)).length;
+    $('.b2-sub', el).textContent = `${this.live ? '라이브 전 편성' : '무대 배치'} · 멤버 ${n}명${n < 6 ? ` · 빈 자리 ${6 - n}` : ''}`;
     $('.b2-ft', el).textContent = this.live ? '결성! ▶ 곡 선택' : '결성!';
     this.pms.forEach(p => { p.style.transition = 'none'; });
     this.place(false);
@@ -230,7 +251,7 @@ scene('band', {
     A($('.b2-floor', el), [{ clipPath: 'inset(0 100% 0 0)' }, { clipPath: 'inset(0 0 0 0)' }], T.wipe, { e: EZ.wipe, delay: 120 });
     stagger($$('.b2-prop, .b2-front', el), KF.fade, T.slam, 380, 40);
     A($('.b2-aud', el), KF.fromBottom('100%'), T.slam, { delay: 520 });
-    this.order().forEach((p, i) => A(p, [{ scale: '.3', opacity: 0 }, { scale: '1', opacity: 1 }], T.pop * 1.3, { delay: 560 + i * 70, e: EZ.pop }));
+    this.pms.filter(p => !p.hidden).forEach((p, i) => A(p, [{ scale: '.3', opacity: 0 }, { scale: '1', opacity: 1 }], T.pop * 1.3, { delay: 560 + i * 70, e: EZ.pop }));
     stagger($$('.b2-list span', el), KF.fromBottom('40%'), T.slam, 800, 50);
     A($('.b2-slab', el), [{ clipPath: 'polygon(100% 0,100% 0,100% 100%,84% 100%)' }, { clipPath: 'polygon(16% 0,100% 0,100% 100%,0 100%)' }], T.wipe, { e: EZ.wipe, delay: 300 });
     A($('.b2-kj', el), KF.fromTop('-20%'), T.char, { delay: 600 });
@@ -250,14 +271,14 @@ scene('band', {
       this.select(this.order().findIndex(p => p.dataset.id === cur), false);
     } else if (k === 'ok') {
       const id = this.order()[this.sel].dataset.id;
-      if (id === 'you') toast('주인공 상세는 설정의 「주인공」에서 바꿀 수 있어요');
+      if (id === 'you') toast('내 파트는 Q / E로 바꾸고, Y로 저장해요');
       else go('member', { arg: MEMBERS.findIndex(m => m.id === id), via: 'slam' });
     } else if (k === 'y') {
       pop($('.b2-form', this.el));
       if (this.live) later(() => go('setlist', { arg: { live: true } }), 250);
       else {
         if (SAVE.profile) { SAVE.profile.inst = G.inst; writeSave(); }      // your part carries into TODAY and the save
-        saving(); toast(`무대 배치를 저장했습니다 · 내 파트 ${PARTS.find(q => q[0] === G.inst)[1]}`);
+        saving(); toast(`${this.order().length > 1 ? '무대 배치를 저장했습니다' : '아직 혼자예요 · 내 파트만 저장했습니다'} · ${PARTS.find(q => q[0] === G.inst)[1]}`);
       }
     } else return undefined;
     return true;

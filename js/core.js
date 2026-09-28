@@ -161,9 +161,7 @@ function Scroller(items, o = {}) {
 /* ---------- shared markup helpers ---------- */
 const bgImg = (name, cls = '') => `<div class="bgimg ${cls}" style="background-image:url(img/bg/${name}.webp)"></div>`;
 const bigWord = (w, cls = '') => `<div class="bigword ${cls}" aria-hidden="true">${w}</div>`;
-const dateChip = () => G.liveDay
-  ? `<div class="datechip live"><b>4/12</b><span>SAT<small>밤</small></span><i class="moon"></i><em>LIVE D-DAY</em></div>`
-  : `<div class="datechip"><b>4/9</b><span>WED<small>방과후</small></span><i class="moon"></i><em>LIVE D-3</em></div>`;
+const dateChip = () => typeof weekChip === 'function' ? weekChip() : '<div class="datechip"><b>4월</b><span>—<small></small></span><i class="moon"></i><em></em></div>';   // week.js fills it from SAVE.game
 const backChip = () => `<span class="backchip" data-tap="back">◀ BACK</span>`;
 const KEYLABEL = { A: 'Z', B: 'X', L: 'Q', R: 'E', Y: 'Y', P: 'P' };
 function hint(keys, right) {
@@ -426,11 +424,13 @@ function modal({ title, body = '', buttons = [{ t: '확인' }], tone = 'ink', as
       if (k === 'left' || k === 'up') L.move(-1);
       else if (k === 'right' || k === 'down') L.move(1);
       else if (k === 'ok') pick(L.i);
-      else if (k === 'back') { ov.close(); const c = buttons.find(b => b.cancel); c && c.fn && c.fn(); }
+      else if (k === 'back') { if (answered) return true; answered = true; ov.close(); const c = buttons.find(b => b.cancel); c && c.fn && c.fn(); }
       return true;
     },
   };
-  const pick = n => { ov.close(); const b = buttons[n]; setTimeout(() => b.fn && b.fn(), 240 * G.K); };
+  // one answer per dialog: the box lingers ~0.2s while it closes, and a second click there used to run the action twice
+  let answered = false;
+  const pick = n => { if (answered) return; answered = true; ov.close(); const b = buttons[n]; setTimeout(() => b.fn && b.fn(), 240 * G.K); };
   const L = List($$('.md-btn', el), { onPick: n => pick(n) });
   openOverlay(ov);
   return ov;

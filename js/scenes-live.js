@@ -43,6 +43,7 @@ function scenarioEvents(sc, prep, part) {
       { type: 'blackout', ...at, dur: bo },
     ];
   }
+  if (sc === 'practice') return [{ type: 'tip', bar: -.5, text: '1년 만의 연습 — <b>실패 없음</b>. 손이 기억하는 대로.', dur: 5 }];
   // lab: an eye contact every 16 bars, rotating through the band
   return [0, 1, 2, 3].map(k => ({ type: 'eye', who: null, bar: 8 + k * 16, bars: 1, k }));
 }
@@ -110,7 +111,8 @@ scene('live', {
     if (G.cur !== 'live' || this.arg !== arg) return;
     this.prep = prep;
     // party + events
-    const party = (arg.party || (arg.scenario === 'lab' ? 'band' : 'signal')) === 'band' ? bandParty(part) : signalParty(part);
+    const pk = arg.party || (arg.scenario === 'lab' ? 'band' : 'signal');
+    const party = pk === 'solo' ? [] : pk === 'band' ? bandParty(part) : signalParty(part);
     let events = arg.events || scenarioEvents(arg.scenario || 'lab', prep, part);
     events = events.map(e => e.who === null ? { ...e, who: party[e.k % party.length].id } : e);
     const L = this.L = new Live({
@@ -268,7 +270,7 @@ scene('live', {
 
   renderParty() {
     const L = this.L;
-    $('.lv-party', this.el).innerHTML = `<span class="lead">${this.arg.scenario === 'lab' && this.arg.party === 'band' ? 'BAND' : 'SIGNAL LOST'}</span>` +
+    $('.lv-party', this.el).innerHTML = `<span class="lead">${this.arg.party === 'solo' ? 'SOLO' : this.arg.scenario === 'lab' && this.arg.party === 'band' ? 'BAND' : 'SIGNAL LOST'}</span>` +
       `<div class="lv-prow you" style="--c:#4FE3FF"><div class="av"><img src="${icon('you')}" alt=""></div><div class="in"><div class="nm">${G.name || 'YOU'}<small>${this.part} · VO</small></div></div></div>` +
       L.members.map(m => `<div class="lv-prow${m.blur ? ' blur' : ''}" data-id="${m.id}" style="--c:${m.c}"><div class="av">${m.icon ? `<img src="${m.icon}" alt="">` : '<i class="sil"></i>'}</div><div class="in"><div class="nm">${m.en}<small>${m.part}</small></div></div><span class="st">ON AIR</span></div>`).join('');
   },
@@ -471,7 +473,7 @@ scene('result', {
     q('.jk').style.backgroundImage = `url(${a.song.jk || 'img/jk/47.webp'})`;
     q('.tt').textContent = a.song.title;
     q('.rs-part').textContent = (INST_INFO[a.part] || INST_INFO.GT).en; q('.rs-diff').textContent = DIFFS[a.diff];
-    q('.rs-band').textContent = a.back && a.back.party === 'band' ? 'NEW BAND' : 'SIGNAL LOST';
+    q('.rs-band').textContent = a.back && a.back.party === 'solo' ? 'SOLO PRACTICE' : a.back && a.back.party === 'band' ? 'NEW BAND' : 'SIGNAL LOST';
     q('.rs-sub').textContent = r.failed ? '공연 중단' : `${r.counts[0]} PERFECT`;
     const rank = q('.rk2'); rank.dataset.r = r.rank; rank.dataset.l = r.rank.length; rank.classList.remove('shine');
     qa('.lt span').forEach(sp => { sp.textContent = r.rank; });

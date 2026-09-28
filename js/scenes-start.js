@@ -159,11 +159,19 @@ scene('title', {
 });
 
 /* ---------------- SAVE ---------------- */
-const slotOf = () => SAVE.progress && SAVE.profile ? {
-  date: '1년 전', dow: 'SUN', time: '저녁', moon: 'full', place: '블루 아워 페스', bg: 'backstage',
-  ch: SAVE.progress.done ? '프롤로그 · 완료' : '프롤로그 · 47초', lv: 1, play: new Date(SAVE.progress.t || Date.now()).toLocaleDateString('ko-KR'),
-  band: `SIGNAL LOST · ${SAVE.profile.name}`, faces: ['you', 'haru'],
-} : null;
+const slotOf = () => {
+  if (!SAVE.progress || !SAVE.profile) return null;
+  const g = SAVE.game, yr = SAVE.progress.story === 'year';
+  return g ? {
+    date: '4월', dow: `${g.week}주`, time: g.phase === 'weekend' || g.phase === 'end' ? '주말' : '평일', moon: 'half', place: '나기사카 · 0dB', bg: 'stage',
+    ch: `1장 제로 데시벨 · ¥${g.money.toLocaleString('en-US')}`, lv: 1, play: new Date(SAVE.progress.t || Date.now()).toLocaleDateString('ko-KR'),
+    band: `0dB 알바 · ${SAVE.profile.name}`, faces: ['you', ...Object.keys(g.met).filter(id => id !== 'koto')],
+  } : {
+    date: yr ? '1년 후' : '1년 전', dow: yr ? 'APR' : 'SUN', time: yr ? '밤' : '저녁', moon: 'full', place: yr ? '나기사카' : '블루 아워 페스', bg: yr ? 'river_night' : 'backstage',
+    ch: yr ? '1년 후' : SAVE.progress.done ? '프롤로그 · 완료' : '프롤로그 · 47초', lv: 1, play: new Date(SAVE.progress.t || Date.now()).toLocaleDateString('ko-KR'),
+    band: `SIGNAL LOST · ${SAVE.profile.name}`, faces: ['you', 'haru'],
+  };
+};
 let SLOTS = [slotOf(), null, null];
 scene('save', {
   title: '세이브 선택', cls: 'sv',
@@ -363,6 +371,7 @@ scene('adv', {
       <div class="adv-text"></div>
       <span class="adv-next"><i></i></span>
     </div>
+    <div class="adv-sig"><i></i></div>
     <div class="adv-ctrl"><span data-c="log"><b>Q</b>LOG</span><span data-c="auto"><b>Y</b>AUTO</span><span data-c="skip"><b>E</b>SKIP</span><span data-c="menu"><b>X</b>MENU</span></div>`,
   init(el) {
     el.addEventListener('click', e => {
@@ -418,8 +427,17 @@ scene('adv', {
       const ex = Array.isArray(ln.ex) ? ln.ex[this.pick] : (ln.ex || 'neutral'), img = $('img', ch), src = `img/pt/${ln.ch}_${ex}.webp`;
       if (!img.src.endsWith(src)) { img.src = src; if (!ch.hidden) A(img, [{ scale: '1.03 .97', translate: '0 1%' }, { scale: '1', translate: '0 0' }], T.pop, { e: EZ.pop }); }
     }
+    if (ln.bg) {                                    // cut to a new place inside the same scene
+      const im = $('.adv-img', el);
+      A(im, [{ opacity: 1 }, { opacity: 0 }], 260, { fill: 'forwards' }).finished.then(() => {
+        im.style.backgroundImage = `url(img/bg/${ln.bg}.webp)`;
+        A(im, [{ opacity: 0, scale: '1.05' }, { opacity: 1, scale: '1' }], 700, { e: EZ.soft, fill: 'forwards' });
+      });
+    }
     if (ln.choice) return this.openChoice(ln.choice);
     if (ln.fx === 'tinnitus') this.tinnitus();
+    if (ln.fx === 'buzz') A($('.adv-box', el), [{ translate: '0 0' }, { translate: '-4px 0' }, { translate: '4px 0' }, { translate: '-3px 0' }, { translate: '0 0' }], 90, { it: 4, e: EZ.lin });
+    if (ln.fx === 'signal') this.signal();
     this.el.classList.toggle('fx-blur', ln.fx === 'blur' || ln.fx === 'tinnitus');
     const who = ln.who === '@NAME' ? G.name : (ln.who || '');
     const name = $('.adv-name', el), box = $('.adv-box', el), face = $('.adv-face', el);
@@ -458,7 +476,7 @@ scene('adv', {
   },
   next() { this.i++; this.show(); },
   openChoice(opts) {
-    this.choosing = true;
+    this.choosing = true; this.picked = false;
     const box = $('.adv-choices', this.el);
     box.innerHTML = opts.map((o, i) => `<span class="adv-opt"><b>${'ABC'[i]}</b>${o}</span>`).join('');
     const items = $$('.adv-opt', box);
@@ -467,7 +485,18 @@ scene('adv', {
     A(this.CL.el, KF.scaleX, T.pop, { delay: 350, pe: '::before', e: EZ.pop });
     A($('.adv-box', this.el), [{ opacity: 1 }, { opacity: .35 }], T.slam, { fill: 'forwards' });
   },
+  /* the cyan line from the logo snaps across the room: the cue for the OP */
+  signal() {
+    const sg = $('.adv-sig', this.el), line = $('i', sg);
+    A(sg, [{ opacity: 0 }, { opacity: 1, offset: .1 }, { opacity: 1, offset: .8 }, { opacity: 0 }], 1600, { e: EZ.lin });
+    A(line, [{ scale: '0 1', translate: '0 0' }, { scale: '1 1', translate: '0 -8px', offset: .2 }, { translate: '0 6px', offset: .3 }, { translate: '0 -3px', offset: .4 }, { scale: '1 1', translate: '0 0', offset: .75 }, { scale: '1 3', translate: '0 0' }], 1600, { e: EZ.lin });
+    A($('.adv-img', this.el), [{ filter: 'none' }, { filter: 'brightness(1.8) saturate(0)', offset: .2 }, { filter: 'brightness(.4)' }], 1600, { fill: 'forwards' });
+  },
   choose(n) {
+    if (this.picked) return;                        // a second press while the choice plays out must not count twice
+    this.picked = true;
+    const eff = this.line().eff;
+    if (eff && eff[n] && typeof applyEff === 'function') applyEff(eff[n]);
     this.pick = n;
     this.log.push({ who: G.name, text: this.line().choice[n] });
     const box = $('.adv-choices', this.el), chosen = this.CL.items[n];
