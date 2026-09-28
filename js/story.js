@@ -39,7 +39,7 @@ const Story = {
   run() {
     const steps = STORY[this.id], st = steps[this.i];
     SAVE.progress = { story: this.id, step: this.i, t: Date.now() }; writeSave();
-    if (!st) { SAVE.progress = { story: this.id, step: 0, done: true }; writeSave(); return go('title', { via: 'fade', push: false }); }
+    if (!st) { SAVE.progress = { story: this.id, step: 0, done: true }; writeSave(); G.stack = []; return go('menu', { via: 'ink', push: false }); }
     const next = () => { this.i++; this.run(); };
     if (st.adv) go('adv', { via: 'fade', push: false, arg: { script: st.adv, bg: st.bg, place: st.place, date: st.date, next } });
     else if (st.card) go('card', { via: 'fade', push: false, arg: { lines: st.card, long: st.long, next } });

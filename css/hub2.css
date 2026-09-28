@@ -1,0 +1,100 @@
+/* v0.7 hub: band setup (stage plot) + member detail recolour. Stage units: px on the 1600×900 stage. */
+.bd2,.mb2x{--abyss:#040B2E;--navy:#060F3A;--cob:#1846F0;--cyan:#4FE3FF;--pale:#A9F1FF;--red:#FF2B4E}
+
+/* ================= BAND SETUP · STAGE PLOT ================= */
+.bd2 .s{background:linear-gradient(165deg,#0A1A6E 0%,#040B2E 70%);color:#fff;font-family:var(--body);overflow:hidden}
+.bd2 .b2-water{position:absolute;inset:-12%;background:radial-gradient(ellipse 36% 12% at 26% 18%,rgba(169,241,255,.14),transparent 70%),radial-gradient(ellipse 30% 9% at 58% 70%,rgba(79,227,255,.10),transparent 70%);animation:b2-water 9s ease-in-out infinite alternate}
+@keyframes b2-water{to{translate:3% 2%;scale:1.05}}
+.bd2 .b2-word{position:absolute;left:-30px;bottom:-64px;font-family:var(--display);font-size:210px;line-height:1;color:transparent;-webkit-text-stroke:2px rgba(169,241,255,.12);transform:rotate(-6deg);white-space:nowrap}
+.bd2 .b2-head{position:absolute;left:56px;top:34px;display:grid;gap:4px;z-index:3}
+.bd2 .b2-head b{font-family:var(--display);font-weight:400;font-size:52px;line-height:1;transform:skewX(-10deg);text-shadow:4px 4px 0 var(--cob)}
+.bd2 .b2-head small{font-family:var(--pixel);font-size:14px;letter-spacing:.24em;color:var(--pale)}
+
+/* the plot: a top-down stage drawing, tilted a little like a sheet on the desk */
+.bd2 .b2-plot{position:absolute;left:70px;top:130px;width:820px;height:470px;rotate:-4deg;z-index:2}
+.bd2 .b2-floor{position:absolute;inset:0;background:linear-gradient(rgba(79,227,255,.07) 1px,transparent 1px) 0 0/40px 40px,linear-gradient(90deg,rgba(79,227,255,.07) 1px,transparent 1px) 0 0/40px 40px,linear-gradient(180deg,#0B1650,#0A2294);border:2px solid rgba(169,241,255,.55);box-shadow:10px 10px 0 rgba(4,11,46,.8)}
+.bd2 .b2-front{position:absolute;left:-2%;right:-2%;bottom:-8px;height:8px;background:#fff}
+.bd2 .b2-aud{position:absolute;left:0;right:0;bottom:-40px;text-align:center;font-family:var(--pixel);font-size:13px;letter-spacing:.5em;color:var(--pale)}
+.bd2 .b2-prop{position:absolute;display:grid;place-items:center;font-family:var(--pixel);font-size:11px;letter-spacing:.16em;color:rgba(169,241,255,.7)}
+.bd2 .b2-riser{left:38%;top:9%;width:34%;height:38%;background:rgba(24,70,240,.35);border:2px dashed rgba(169,241,255,.5);place-items:start center;padding-top:6px}
+.bd2 .b2-side{left:1.5%;top:9%;width:17%;height:40%;border:2px dashed rgba(169,241,255,.35);place-items:start center;padding-top:6px}
+.bd2 .b2-amp{width:74px;height:40px;background:#050A2A;border:2px solid rgba(169,241,255,.45)}
+.bd2 .b2-wedge{width:62px;height:22px;background:#050A2A;border:2px solid rgba(169,241,255,.4);clip-path:polygon(12% 0,88% 0,100% 100%,0 100%)}
+.bd2 .b2-list{position:absolute;left:0;right:0;top:calc(100% + 46px);display:grid;grid-template-columns:repeat(6,1fr);gap:6px}
+.bd2 .b2-list span{display:grid;gap:1px;padding:5px 10px;background:rgba(4,11,46,.85);border-left:3px solid var(--c,#56619A);font-family:var(--pixel);font-size:11px;letter-spacing:.08em;color:var(--pale);transform:skewX(-10deg)}
+.bd2 .b2-list b{font-family:var(--display);font-weight:400;font-size:15px;letter-spacing:0;color:#fff}
+
+/* people on the plot: a face in their colour ring, a part tag; they walk when the lineup changes */
+.bd2 .pm2{position:absolute;translate:-50% -50%;display:grid;justify-items:center;gap:6px;rotate:4deg;cursor:pointer;z-index:2;transition:left .55s cubic-bezier(.16,1,.3,1),top .55s cubic-bezier(.16,1,.3,1)}
+.bd2 .pm2 .ring{position:relative;width:96px;height:96px;border-radius:50%;border:5px solid var(--c);background:var(--navy);overflow:hidden;transition:scale .22s cubic-bezier(.34,1.56,.64,1),box-shadow .2s}
+.bd2 .pm2 .ring img{width:100%;height:100%;object-fit:cover;object-position:50% 20%;display:block}
+.bd2 .pm2 .glow{position:absolute;left:50%;top:48px;width:190px;height:70px;translate:-50% -50%;border-radius:50%;background:radial-gradient(closest-side,rgba(79,227,255,.55),transparent);opacity:0;z-index:-1;pointer-events:none}
+.bd2 .pm2 .tag{position:relative;isolation:isolate;display:grid;justify-items:center;line-height:1.05;padding:3px 14px;font-family:var(--display);font-size:19px;color:#fff;background:rgba(4,11,46,.9);transform:skewX(-10deg)}
+.bd2 .pm2 .tag small{font-family:var(--pixel);font-size:11px;letter-spacing:.12em;color:var(--c)}
+.bd2 .pm2.you .ring{border-color:#fff}
+.bd2 .pm2.sub .ring{width:74px;height:74px;opacity:.75}
+.bd2 .pm2.sub .tag{font-size:15px}
+.bd2 .pm2 .warn{position:absolute;right:-26px;top:-6px;font-size:12px;font-weight:700;padding:2px 8px;background:var(--red);color:#fff;transform:skewX(-10deg) rotate(6deg)}
+.bd2 .pm2.sel{z-index:4}
+.bd2 .pm2.sel .ring{scale:1.18;box-shadow:0 0 0 4px #fff,0 0 26px rgba(79,227,255,.7)}
+.bd2 .pm2.sel .glow{opacity:1;animation:b2-glow calc(var(--beat,.5s) * 2) ease-in-out infinite alternate}
+@keyframes b2-glow{to{scale:1.15;opacity:.6}}
+.bd2 .pm2.sel .tag{color:var(--abyss);background:transparent}
+.bd2 .pm2.sel .tag small{color:var(--abyss)}
+.bd2 .pm2.sel .tag::before{content:"";position:absolute;inset:0;background:#fff;z-index:-1}
+.bd2 .pm2.sel .tag::after{content:"";position:absolute;left:-14px;right:-18px;top:42%;height:6px;background:var(--red);clip-path:polygon(0 60%,100% 0,100% 40%,0 100%);z-index:-2}
+
+/* the selected member, big, on a slab of their colour */
+.bd2 .b2-cut{--c:#4FE3FF;position:absolute;left:930px;top:0;right:0;bottom:0;z-index:1;overflow:hidden}
+.bd2 .b2-slab{position:absolute;inset:0;background:linear-gradient(160deg,color-mix(in srgb,var(--c) 70%,#fff),var(--c) 50%,color-mix(in srgb,var(--c) 45%,#040B2E));clip-path:polygon(16% 0,100% 0,100% 100%,0 100%)}
+.bd2 .b2-slab::after{content:"";position:absolute;left:-10%;right:-10%;top:58%;height:30px;background:rgba(255,255,255,.85);rotate:-8deg}
+.bd2 .b2-kj{position:absolute;right:-20px;top:40px;writing-mode:vertical-rl;font-family:var(--display);font-size:250px;line-height:1;color:transparent;-webkit-text-stroke:3px rgba(255,255,255,.4);white-space:nowrap}
+.bd2 .b2-img{position:absolute;right:-40px;bottom:-190px;height:1050px;filter:drop-shadow(-12px 8px 0 rgba(4,11,46,.35))}
+.bd2 .b2-img.need{filter:grayscale(1) brightness(.6)}
+.bd2 .b2-info{position:absolute;left:1065px;top:540px;width:430px;padding:18px 24px 20px;background:rgba(4,11,46,.93);border:3px solid #fff;outline:2px solid rgba(255,255,255,.35);outline-offset:5px;transform:skewX(-6deg);z-index:3;display:grid;gap:10px}
+.bd2 .b2-info > *{transform:skewX(6deg)}
+.bd2 .b2-part{font-family:var(--pixel);font-size:13px;letter-spacing:.14em;color:var(--c,#4FE3FF)}
+.bd2 .b2-name{font-family:var(--kr-display);font-weight:400;font-size:42px;line-height:1.05;margin-top:-4px}
+.bd2 .b2-bond{display:flex;align-items:baseline;gap:12px;font-size:15px;font-weight:700}
+.bd2 .b2-bond .lv{font-family:var(--display);font-size:18px;color:var(--abyss);background:var(--c,#4FE3FF);padding:0 10px;transform:skewX(-10deg)}
+.bd2 .b2-bond .ht{color:var(--c,#4FE3FF);letter-spacing:.1em}
+.bd2 .b2-bars{display:grid;grid-template-columns:40px 1fr 34px;gap:6px 10px;align-items:center;font-size:13px;font-weight:700}
+.bd2 .b2-bars i{height:10px;background:rgba(255,255,255,.12);transform:skewX(-20deg);overflow:hidden}
+.bd2 .b2-bars i b{display:block;height:100%;background:var(--c,#4FE3FF);transition:width .5s cubic-bezier(.16,1,.3,1)}
+.bd2 .b2-bars i b.lo{background:var(--red)}
+.bd2 .b2-bars em{font-style:normal;font-family:var(--display);font-size:15px;text-align:right}
+.bd2 .b2-line{margin:0;background:#fff;color:var(--abyss);padding:8px 14px;font-weight:700;font-size:15px;clip-path:polygon(2% 8%,100% 0,98% 92%,0 100%)}
+.bd2 .b2-go{justify-self:end;font-family:var(--display);font-size:15px;letter-spacing:.06em;color:var(--pale);cursor:pointer}
+
+/* bottom: your part (Q/E) and form the band (Y) */
+/* both live inside the plot, so they share its tilt: the part picker centred under the input list,
+   the form button hanging off the plot's bottom-right corner */
+.bd2 .b2-mine{position:absolute;left:0;right:0;top:calc(100% + 122px);display:flex;justify-content:center;align-items:center;gap:14px;z-index:3}
+.bd2 .b2-mine small{font-family:var(--pixel);font-size:13px;letter-spacing:.2em;color:var(--pale)}
+.bd2 .b2-mine .arw{font-family:var(--display);font-size:22px;color:var(--pale);cursor:pointer}
+.bd2 .b2-mine b{font-family:var(--display);font-weight:400;font-size:44px;line-height:1;padding:2px 20px;background:#fff;color:var(--abyss);transform:skewX(-10deg);box-shadow:6px 6px 0 var(--cob);min-width:260px;text-align:center}
+.bd2 .b2-form{position:absolute;right:-56px;bottom:14px;rotate:-6deg;z-index:6;display:flex;align-items:center;gap:10px;font-family:var(--kr-display);font-size:34px;padding:6px 26px;color:var(--abyss);background:var(--cyan);transform:skewX(-10deg);box-shadow:6px 6px 0 #fff;cursor:pointer}
+.bd2 .b2-form i{font-style:normal;display:inline-grid;place-items:center;width:28px;height:28px;border-radius:6px;border:2px solid currentColor;font-family:var(--display);font-size:14px}
+
+/* ================= MEMBER DETAIL · recoloured by the member ================= */
+.mb2x .s{--c:inherit}          /* the old sheet pinned --c to Rui's pink here, so every member came out the same colour */
+.mb2x .mx-bg{background:radial-gradient(ellipse 40% 12% at 30% 8%,rgba(255,255,255,.25),transparent 70%),linear-gradient(170deg,color-mix(in srgb,var(--c) 70%,#fff),var(--c) 45%,color-mix(in srgb,var(--c) 45%,#040B2E))}
+.mb2x .mx-dark{background:color-mix(in srgb,var(--c) 22%,#0A0F2E)}
+.mb2x .mx-str.k1,.mb2x .mx-str.k2{background:color-mix(in srgb,var(--c) 30%,#070B24)}
+.mb2x .mx-por{background-image:linear-gradient(115deg,transparent 22%,color-mix(in srgb,var(--c) 28%,#fff) 22%)}
+.mb2x .mx-bars b{background:var(--c)}
+.mb2x .mx-bars b.lo{background:var(--red)}
+.mb2x .mx-dots i.on{background:var(--c)}
+.mb2x .mx-kj{position:absolute;left:3%;top:7%;display:grid;z-index:1}
+.mb2x .mx-kj small{font-family:var(--pixel);font-size:1em;letter-spacing:.3em;color:#fff;opacity:.8}
+.mb2x .mx-kj b{font-family:var(--display);font-weight:400;font-size:15em;line-height:.95;color:var(--c);-webkit-text-stroke:.02em #fff;paint-order:stroke fill;text-shadow:.04em .04em 0 #070B24;transform:skewX(-8deg);transform-origin:0 100%;white-space:nowrap}
+.mb2x .mx-kj[data-n="2"] b{font-size:11em}
+/* stats: one row on their own white plate, between the name and the tabs, so nothing overlaps */
+.mb2x .mx-name{top:35%}
+.mb2x .mx-data{top:55.5%;left:17%;width:38%;transform-origin:0 100%;padding:6px 30px 7px 16px;background:#fff;clip-path:polygon(0 0,100% 0,96% 100%,0 100%)}
+.mb2x .mx-bars{grid-template-columns:auto 1fr auto 1fr;gap:0 .6em;font-size:.82em;color:#070B24}
+.mb2x .mx-bars i{height:.72em;background:#D5DAEA}
+
+/* main menu: entries this build can't open yet */
+.mm .menu span.lock{opacity:.4}
+.mm .menu span.lock.sel{opacity:1}

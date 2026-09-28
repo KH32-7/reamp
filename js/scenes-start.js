@@ -222,7 +222,7 @@ scene('save', {
     else if (k === 'down') this.S.move(1);
     else if (k === 'ok') {
       const s = SLOTS[this.S.idx];
-      if (s) confirmBox('이 데이터를 불러올까요?', `${s.ch} · ${s.band}`, () => { Object.assign(G, SAVE.profile); Story.start(SAVE.progress.story || 'prologue', SAVE.progress.done ? 0 : SAVE.progress.step); });
+      if (s) confirmBox('이 데이터를 불러올까요?', `${s.ch} · ${s.band}`, () => { Object.assign(G, SAVE.profile); if (SAVE.progress.done) { saving(); go('menu', { via: 'pan', push: false }); } else Story.start(SAVE.progress.story || 'prologue', SAVE.progress.step); });
       else go('opening');   // NEW GAME → cold open → create
     } else if (k === 'back') { G.stack = []; go('title', { via: 'pan', dir: -1, push: false }); }
     return true;
@@ -308,10 +308,16 @@ scene('create', {
     else if (k === 'down' && this.L) this.L.move(1);
     else if (k === 'ok') {
       if (this.step < 2) { this.step++; this.showStep(1); }
-      else confirmBox(`${G.name}, 맞아?`, `${G.gender === 'm' ? '남' : '여'} · ${INSTS.find(x => x[0] === G.inst)[2]} — SIGNAL LOST에서 네가 맡았던 파트`, () => {
-        SAVE.profile = { name: G.name, gender: G.gender, inst: G.inst }; writeSave();
-        Story.start('prologue');
-      });
+      else {
+        // freeze the choice now: the dialog closes before its callback runs, and a stray hover over the list
+        // in that gap used to switch the instrument (e.g. KEYS saved as DRUMS)
+        const prof = { name: G.name, gender: G.gender, inst: G.inst };
+        confirmBox(`${prof.name}, 맞아?`, `${prof.gender === 'm' ? '남' : '여'} · ${INSTS.find(x => x[0] === prof.inst)[2]} — SIGNAL LOST에서 네가 맡았던 파트`, () => {
+          Object.assign(G, prof);
+          SAVE.profile = prof; writeSave();
+          Story.start('prologue');
+        });
+      }
     } else if (k === 'back') {
       if (this.step > 0) { this.step--; $('#crName', this.el).blur(); this.showStep(-1); }
       else go('save', { via: 'iris', push: false });

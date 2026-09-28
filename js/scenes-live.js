@@ -663,7 +663,7 @@ scene('lab', {
     else if (k === 'left' || k === 'l1') { if (this.row < n) this.change(-1); }
     else if (k === 'right' || k === 'r1') { if (this.row < n) this.change(1); }
     else if (k === 'ok') { if (this.row === n) this.play(); else if (this.row === 0) { this.row = n; this.paint(); } else this.change(1); }
-    else if (k === 'back') go('title', { via: 'sweepBack', push: false });
+    else if (k === 'back') { let to; do { to = G.stack.pop(); } while (to && to !== 'menu' && to !== 'title'); go(to || 'title', { via: 'sweepBack', push: false }); }
     return true;
   },
 });
