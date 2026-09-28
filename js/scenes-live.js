@@ -237,6 +237,7 @@ scene('live', {
   },
   /* stage-space rectangle for a coach step: 'hw' the whole highway, 'line' the judgement line + keys, or a selector */
   spot(k) {
+    if (typeof k === 'function') return k();
     const g = this.R.geom, pad = 12;
     if (k === 'hw') return { x: g.CX - g.halfW - 20, y: g.HOR + 60, w: g.halfW * 2 + 40, h: 900 - g.HOR - 76 };
     if (k === 'line') return { x: g.CX - g.halfW - 20, y: g.LINE - 64, w: g.halfW * 2 + 40, h: 900 - g.LINE + 50 };
@@ -248,11 +249,12 @@ scene('live', {
   /* mid-song explanations, each shown just before its thing first reaches you */
   coachEvents(L) {
     const ev = (at, steps) => at > 1 && L.events.push({ type: 'coach', at, steps, done: false });
-    const lead = 1.6, notes = L.notes;
-    const kick = notes.find(n => n.kind === 'kick'), hold = notes.find(n => n.len && n.kind !== 'extra'), gem = notes.find(n => n.kind === 'extra');
-    if (kick) ev(kick.t - lead, [{ spot: 'hw', t: '킥 노트', b: '가로로 긴 주황색 막대는 킥이에요. <b>SPACE</b>로 치세요.', c: '#FF7A3D' }]);
-    if (hold) ev(hold.t - lead, [{ spot: 'hw', t: '롱 노트', b: '길게 이어진 노트예요. 판정선에 닿으면 누르고, <b>꼬리가 끝날 때까지</b> 떼지 마세요. 중간에 떼면 MISS가 돼요.' }]);
-    if (gem) ev(gem.t - lead, [{ spot: 'hw', t: '보석 노트', b: '반짝이는 노트는 코러스나 퍼커션 소리예요. 어떤 악기를 골랐든 <b>같이 쳐야</b> 해요.', c: '#FF8FC8' }]);
+    const lead = .9, notes = L.notes;                  // ~0.9 s out the note is fully drawn, about a third of the way down
+    const at = n => () => this.R.rectOf(n, L.time);
+    const kick = notes.find(n => n.kind === 'kick'), hold = notes.find(n => n.len && n.kind !== 'extra' && n.end - n.t >= .6), gem = notes.find(n => n.kind === 'extra');
+    if (kick) ev(kick.t - lead, [{ spot: at(kick), t: '킥 노트', b: '가로로 긴 주황색 막대는 킥이에요. <b>SPACE</b>로 치세요.', c: '#FF7A3D' }]);
+    if (hold) ev(hold.t - lead, [{ spot: at(hold), t: '롱 노트', b: '꼬리가 달린 노트예요. 판정선에 닿으면 누르고, <b>꼬리가 끝날 때까지</b> 떼지 마세요. 중간에 떼면 MISS가 돼요.' }]);
+    if (gem) ev(gem.t - lead, [{ spot: at(gem), t: '보석 노트', b: '반짝이는 노트는 코러스나 퍼커션 소리예요. 어떤 악기를 골랐든 <b>같이 쳐야</b> 해요.', c: '#FF8FC8' }]);
     const f = L.members.flatMap(m => m.fumbles.map(x => ({ m, x }))).sort((a, b) => a.x.t0 - b.x.t0)[0];
     if (f) ev(f.x.t0 - 1.9, [{ spot: `.lv-prow[data-id="${f.m.id}"]`, t: 'COVER', b: `${f.m.name}의 연주가 흔들리고 있어요. 곧 <b>${f.m.name} 색으로 칠해진 노트</b>가 내 레인으로 내려와요. 그 노트를 치면 대신 받쳐 줄 수 있어요.`, c: f.m.c }]);
     const w = L.eyes[0];

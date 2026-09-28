@@ -55,6 +55,12 @@ function Highway(cv, live, o = {}) {
   const text = (x, y, s, c, o = {}) => H.fx.push({ k: 'text', x, y, s, c, life: 0, max: o.life || .7, vy: o.vy ?? -90, size: o.size || 26 });
 
   /* called by the scene on each judgement */
+  H.rectOf = (n, t) => {
+    const s0 = sOf(n.t - t), s1 = n.len ? sOf(n.end - t) : s0, kick = n.lane >= N;
+    const w = (kick ? halfW * 2 : laneW) * xs(s0), x = kick ? CX : xOf(n.lane, s0);
+    const y0 = yOf(s1), y1 = yOf(s0);
+    return { x: x - w / 2 - 16, y: y0 - 26, w: w + 32, h: y1 - y0 + 52 };
+  };
   H.hit = (n, k) => {
     const L = H.lane[n.lane] || H.lane[0];
     if (k === 3) { L.miss = 1; H.shake = Math.max(H.shake, n.kind === 'kick' ? 5 : 3.5); return; }
