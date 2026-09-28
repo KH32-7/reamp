@@ -129,7 +129,10 @@ scene('live', {
     const el = this.el;
     this.arg = arg;
     this.stopLoop();
-    el.className = el.className.replace(/\b(amp|cold|silence|bo|hands|ready|th-\w+)\b/g, '').trim();
+    // a live after the prologue's 47 seconds must not inherit anything from it (the collapse tilt, the dark stage, Haru's cut-in)
+    el.className = el.className.replace(/\b(amp|cold|silence|bo|hands|fall|ready|th-\w+)\b/g, '').replace(/\s+/g, ' ').trim();
+    el.getAnimations().forEach(x => x.cancel());
+    { const ci = $('.lv-ci', el); ci.classList.remove('drop'); ci.getAnimations().forEach(x => x.cancel()); $('.eyes img', ci).classList.remove('pt'); $('b', ci).innerHTML = 'EYE<br>CONTACT!'; $('small', ci).textContent = '한 마디 · GREAT 이상'; }
     const song = typeof arg.song === 'string' ? SONGS.find(s => s.id === arg.song) : arg.song || SONGS[0];
     const part = arg.part || G.inst || 'GT', diff = arg.diff ?? G.diff ?? 1;
     this.part = part;
