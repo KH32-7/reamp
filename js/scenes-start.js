@@ -376,6 +376,7 @@ scene('adv', {
     const el = this.el;
     $('.adv-ch', el).hidden = true;
     $$('.adv-ctrl span', el).forEach(s => s.classList.remove('on'));
+    this.prime();
     A($('.adv-img', el), [{ opacity: 0, scale: '1.08' }, { opacity: 1, scale: '1' }], 900, { e: EZ.soft });
     A($('.adv-place', el), KF.fromLeft('-60%'), T.char, { delay: 300 });
     A($('.datechip', el), KF.fromRight('60%'), T.char, { delay: 360 });
@@ -385,6 +386,20 @@ scene('adv', {
   },
   leave() { clearInterval(this.tw); },
   line() { return this.script[this.i]; },
+  /* shape the empty box for the first line before it slides in, so it never flashes a face slot it won't use */
+  prime() {
+    const el = this.el, ln = this.line() || {}, box = $('.adv-box', el), meta = SPEAKER[ln.who] || {};
+    el.dataset.side = !ln.ch ? 'N' : FACING[ln.ch] === 'l' ? 'R' : 'L';
+    $('.adv-face', el).hidden = !meta.face;
+    box.classList.toggle('noface', !meta.face);
+    box.classList.toggle('narr', !ln.who);
+    box.classList.toggle('me', ln.who === '@NAME');
+    box.classList.toggle('talk', !!ln.ch && ln.who !== '@NAME');
+    box.style.setProperty('--sc', meta.c || 'var(--peri)');
+    $('.adv-name span', el).textContent = ''; $('.adv-role', el).textContent = ''; $('.adv-text', el).textContent = '';
+    $('.adv-next', el).hidden = true;
+    this.speaking = null;
+  },
   show() {
     const el = this.el, ln = this.line();
     if (!ln) return this.end();

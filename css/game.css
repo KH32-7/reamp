@@ -10,9 +10,9 @@ body{padding:0}
 .tt-lab:hover{border-color:var(--lime);color:#fff}
 
 /* create: the heading of the one-year-ago profile */
-.cr .cr-head{position:absolute;left:44%;top:4.6%;display:block;font-family:var(--kr-display);font-size:30px;line-height:1.1;color:#fff;letter-spacing:.08em;text-shadow:3px 3px 0 var(--cobalt);z-index:3}
-.cr .cr-steps{top:11%}
-.cr .cr-art{top:4%;height:100%}
+/* create: the one-year-ago heading sits as a label in the top-left corner, above the art */
+.cr .cr-head{position:absolute;left:40px;top:22px;display:block;font-family:var(--kr-display);font-size:24px;line-height:1;color:#fff;letter-spacing:.08em;padding:8px 22px 8px 16px;background:rgba(4,11,46,.85);border-left:5px solid #4FE3FF;transform:skewX(-12deg);z-index:3}
+.cr .cr-art{top:7.5%;height:97%}
 
 /* adv: narration + tinnitus blur + past date chip */
 .adv3 .adv-box.narr .adv-name,.adv3 .adv-box.narr .adv-face{display:none}
