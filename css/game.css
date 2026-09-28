@@ -1,0 +1,39 @@
+/* game build: full-window letterboxed stage, no prototype chrome */
+html,body{margin:0;height:100%;background:#000;overflow:hidden;padding:0}
+body{padding:0}
+#viewport{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);margin:0;box-shadow:none}
+#stage .scene{border:0;border-radius:0;box-shadow:none}
+
+/* title: lab chip */
+.tt-lab{position:absolute;right:40px;bottom:64px;z-index:5;display:flex;align-items:center;gap:10px;font-family:var(--display);font-size:15px;color:var(--sky);background:rgba(20,27,77,.7);border:2px solid var(--peri);padding:6px 16px 6px 8px;transform:skewX(-12deg);cursor:pointer}
+.tt-lab b{display:inline-grid;place-items:center;width:26px;height:26px;border-radius:50%;background:var(--lime);color:var(--ink);font-size:13px;transform:skewX(12deg)}
+.tt-lab:hover{border-color:var(--lime);color:#fff}
+
+/* create: the heading of the one-year-ago profile */
+.cr-head{position:absolute;left:5.5%;top:7%;font-family:var(--kr-display);font-size:38px;color:#fff;letter-spacing:.08em;text-shadow:3px 3px 0 var(--cobalt);z-index:3}
+.cr .cr-steps{top:15.5%}
+
+/* adv: narration + tinnitus blur + past date chip */
+.adv3 .adv-box.narr .adv-name,.adv3 .adv-box.narr .adv-face{display:none}
+.adv3 .adv-box.narr{--sc:#8FA8FF}
+.adv3 .adv-box.narr .adv-text{font-style:normal;color:#DDE5FF}
+.adv.fx-blur .adv-img{filter:blur(4px) brightness(.8)}
+.adv .adv-img{transition:filter 1.2s}
+.datechip.past b{font-size:.8em;letter-spacing:.02em}
+.datechip.past em{background:#56619A;color:#fff;padding:0 .35em}
+
+/* story card */
+.card .s{background:#050A2A}
+.cd-bg{position:absolute;inset:0;background:repeating-linear-gradient(-14deg,transparent 0 60px,rgba(47,75,255,.07) 60px 62px)}
+.cd-a{position:absolute;left:120px;top:300px;font-family:var(--pixel);font-size:22px;letter-spacing:.3em;color:var(--lime)}
+.cd-b{position:absolute;left:110px;top:340px;font-family:var(--kr-display);font-size:96px;color:#fff;transform:skewX(-8deg);text-shadow:6px 6px 0 var(--cobalt)}
+.cd-c{position:absolute;left:124px;top:480px;right:120px;font-size:22px;color:var(--peri);line-height:1.6}
+.cd-skip{position:absolute;right:48px;bottom:40px;font-family:var(--pixel);font-size:14px;color:rgba(234,240,255,.5)}
+
+/* result extras */
+.rs .rs-badge{position:absolute;left:8%;top:62%;font-family:var(--display);font-size:34px;padding:.05em .6em;transform:rotate(-8deg);background:#fff;color:var(--ink);box-shadow:.18em .18em 0 var(--pink)}
+.rs .rs-badge[data-k="fc"]{background:var(--yellow)}
+.rs .rs-badge[data-k="f"]{background:#56619A;color:#fff}
+.rs .rank[data-r="F"]{color:#8FA8FF}
+.rs .members:empty{display:none}
+.rs .stats dl{grid-template-columns:auto auto auto auto}
