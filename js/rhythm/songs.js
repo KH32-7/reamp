@@ -26,15 +26,18 @@ const AU = {
 };
 
 /* ---------- song registry ---------- */
+/* hl: where the highlight version stops (seconds); it then fades out. About 1:40–2:00 including the count-in. */
 const SONGS = [
   {
     id: 'count4', title: 'カウント四つ', sub: 'SIGNAL LOST · 1곡째 · 카운트 넷', bpm: 127, jk: 'img/jk/47.webp', chart: 'audio/count4/chart.json',
-    stems: { vocals: 'audio/count4/vocals.mp3', bvox: 'audio/count4/bvox.mp3', drums: 'audio/count4/drums.mp3', bass: 'audio/count4/bass.mp3', guitar: 'audio/count4/guitar.mp3', keys: 'audio/count4/keys.mp3', perc: 'audio/count4/perc.mp3', strings: 'audio/count4/strings.mp3', synth: 'audio/count4/synth.mp3', other: 'audio/count4/other.mp3' },
+    hl: 97.8,                                       // highlight: intro → 2nd chorus, cut at bar 52 (before the solo) · full 3:01
+    stems: { vocals: 'audio/count4/vocals.mp3?r=2', bvox: 'audio/count4/bvox.mp3?r=2', drums: 'audio/count4/drums.mp3?r=2', bass: 'audio/count4/bass.mp3?r=2', guitar: 'audio/count4/guitar.mp3?r=2', keys: 'audio/count4/keys.mp3?r=2', perc: 'audio/count4/perc.mp3?r=2', strings: 'audio/count4/strings.mp3?r=2', synth: 'audio/count4/synth.mp3?r=2', other: 'audio/count4/other.mp3?r=2' },
   },
   {
     id: 'hanpaku', title: '半拍ずれたまま', sub: 'SIGNAL LOST · 2곡째 · 반 박자 어긋난 채로', bpm: 125, jk: 'img/jk/47.webp', chart: 'audio/hanpaku/chart.json',
     cutAt: 151,                                     // 2:31 — the sound dies here
-    stems: { vocals: 'audio/hanpaku/vocals.mp3', bvox: 'audio/hanpaku/bvox.mp3', drums: 'audio/hanpaku/drums.mp3', bass: 'audio/hanpaku/bass.mp3', guitar: 'audio/hanpaku/guitar.mp3', keys: 'audio/hanpaku/keys.mp3', perc: 'audio/hanpaku/perc.mp3', synth: 'audio/hanpaku/synth.mp3', other: 'audio/hanpaku/other.mp3' },
+    hl: 117.6,                                      // highlight: intro → 2nd chorus, cut at bar 62 (before the break) · full 3:12
+    stems: { vocals: 'audio/hanpaku/vocals.mp3?r=2', bvox: 'audio/hanpaku/bvox.mp3?r=2', drums: 'audio/hanpaku/drums.mp3?r=2', bass: 'audio/hanpaku/bass.mp3?r=2', guitar: 'audio/hanpaku/guitar.mp3?r=2', keys: 'audio/hanpaku/keys.mp3?r=2', perc: 'audio/hanpaku/perc.mp3?r=2', synth: 'audio/hanpaku/synth.mp3?r=2', other: 'audio/hanpaku/other.mp3?r=2' },
   },
 ];
 

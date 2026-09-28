@@ -27,6 +27,7 @@ function Highway(cv, live, o = {}) {
     fx: [], lane: [...Array(5)].map(() => ({ hit: 0, press: 0, miss: 0, vib: 0, vibT: 0 })), kick: 0, thump: 0, shake: 0, punch: 0,
     ghost: false, handsStop: 0, silence: 0, amp: 0, beatPulse: 0, flashEye: null,
     resize(k) { K = k; cv.width = 1600 * k; cv.height = 900 * k; },
+    geom: { CX, LINE, HOR, halfW },                // for the tutorial spotlight
   };
   H.resize(o.k || 1);
 

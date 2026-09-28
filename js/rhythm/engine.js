@@ -9,6 +9,7 @@
 const WIN = { P: .045, G: .09, g: .13 };          // judgement windows (s)
 const JN = ['PERFECT', 'GREAT', 'GOOD', 'MISS'];
 
+const FADE_OUT = 2.4;                                          // highlight version: seconds of fade after the cut
 class Live {
   constructor(cfg) {
     this.cfg = cfg;
@@ -23,11 +24,14 @@ class Live {
     // shared notes (chorus / percussion / strings / synth / other) are folded into every part's gaps
     const ex = prep.charts.EX && prep.charts.EX[diff];
     if (ex && !cfg.noExtras) for (const n of Charter.merge(this.notes, ex, this.tm, diff, this.lanes)) this.notes.push({ ...n, kind: 'extra', c: ROLE_C[n.role] || '#FFFFFF', j: null });
+    // highlight cut: the song stops at `until` and fades out; notes past it are dropped, holds that would cross it become taps
+    this.until = cfg.until || 0;
+    if (this.until) this.notes = this.notes.filter(n => n.t < this.until - .05).map(n => n.len && n.end > this.until - .1 ? { ...n, len: 0, end: 0 } : n);
     this.events = (cfg.events || []).map(e => ({ ...e, at: e.at ?? Charter.timeOf(this.tm, e.bar * 4), done: false })).sort((a, b) => a.at - b.at);
     this.bo = null;
     const bo = this.events.find(e => e.type === 'blackout');
     const lastAny = Math.max(0, ...Object.values(prep.charts).map(c => (c[1] && c[1].length ? c[1][c[1].length - 1].t : 0)));
-    this.endT = bo ? bo.at + (bo.dur || 47) + 3 : Math.min(prep.dur, lastAny + 3);
+    this.endT = bo ? bo.at + (bo.dur || 47) + 3 : this.until ? this.until + FADE_OUT + .6 : Math.min(prep.dur, lastAny + 3);
     this.buildMembers(cfg.party || []);
     this.buildEyes();
     if (bo) this.buildGhosts(bo);
@@ -50,7 +54,7 @@ class Live {
     this.members = party.map((m, i) => {
       if (m.role === 'lead' && !this.prep.bufs.lead) m = { ...m, role: 'guitar' };   // no separate lead stem: Haru owns the guitar
       const key = ch[m.role] ? m.role : m.part;
-      const notes = ((ch[key] && ch[key][1]) || []).filter(n => !(m.part === 'DR' && n.lane === 4) || true).map(n => ({ t: n.t, lane: n.lane, len: n.len, end: n.end, done: false, bad: false }));
+      const notes = ((ch[key] && ch[key][1]) || []).filter(n => !this.until || n.t < this.until - .05).map(n => ({ t: n.t, lane: n.lane, len: n.len, end: n.end, done: false, bad: false }));
       const stem = this.prep.bufs[m.role] && m.role !== this.role ? m.role : null;
       return { ...m, i, notes, ni: 0, stem, fumbles: [], dropped: false, warn: 0, flash: 0, hits: [] };
     });
@@ -130,8 +134,12 @@ class Live {
   start(lead = 2.4) {
     const ac = this.ac = AU.get();
     const first = this.notes.length ? this.notes[0].t : 0;
-    lead = Math.max(lead, 2.2 - (first - this.from) + .6);
+    // count-in: 3 · 2 · 1 about a second apart, locked to the tempo; GO lands on the first beat at or after the start
+    const tm = this.tm, step = this.beat * Math.max(1, Math.round(.9 / this.beat));
+    const g0 = tm.offset + Math.ceil((this.from - .05 - tm.offset) / this.beat) * this.beat;
+    lead = Math.max(lead, 2.2 - (first - this.from) + .6, 3 * step + .5 - (g0 - this.from));
     this.t0 = ac.currentTime + lead - this.from;
+    this.cd = { step, at: [3, 2, 1, 0].map(k => this.t0 + g0 - k * step) };
     this.music = ac.createGain(); this.lp = ac.createBiquadFilter(); this.lp.type = 'lowpass'; this.lp.frequency.value = 20000;
     // the stems sum well under a finished master (~-19 dB RMS); bring each song to a common level
     const norm = ac.createGain(); norm.gain.value = this.normGain();
@@ -156,8 +164,10 @@ class Live {
     this.crowd = ac.createGain(); this.crowd.gain.value = 0; cs.connect(cf).connect(this.crowd).connect(AU.master); cs.start();
     this.srcs.push(cs);
     this.sfx = ac.createGain(); this.sfx.gain.value = .6; this.sfx.connect(AU.master);
-    // count-in sticks
-    for (let k = 4; k >= 1; k--) { const t = this.t0 + this.tm.offset - k * this.beat; if (t > ac.currentTime) this.stick(t, k === 4 ? 1 : .7); }
+    // count-in sticks, one on each number
+    this.cd.at.slice(0, 3).forEach((t, k) => { if (t > ac.currentTime) this.stick(t, k ? .7 : 1); });
+    // highlight: fade the record out after the cut point
+    if (this.until) { const t = this.t0 + this.until; this.music.gain.setValueAtTime(1, t); this.music.gain.linearRampToValueAtTime(0, t + FADE_OUT); }
     // the cut is scheduled sample-accurately
     for (const e of this.events) if (e.type === 'blackout') { this.music.gain.setValueAtTime(1, this.t0 + e.at - .01); this.music.gain.setValueAtTime(0, this.t0 + e.at); }
     this.running = true;

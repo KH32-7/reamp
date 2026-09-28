@@ -317,3 +317,21 @@
 .fx-slide b{background:linear-gradient(100deg,#0A2AC0,#1846F0 70%,#2F5BFF)}
 
 .rs2 .rmb .av .sil{display:block;width:100%;height:100%;transform:skewX(12deg);background:radial-gradient(circle at 50% 38%,#2A3278 0 22%,transparent 23%),radial-gradient(ellipse 60% 45% at 50% 100%,#2A3278 0 60%,transparent 61%),#8FA8FF}
+
+/* ---------- tutorial coach: everything dims except the part being explained ---------- */
+.lv .lv-coach{--hc:#4FE3FF;position:absolute;inset:0;z-index:12;display:none;cursor:pointer}
+.lv .lv-coach.on{display:block}
+.lv .cc-hole{position:absolute;border:3px solid var(--hc);box-shadow:0 0 0 2400px rgba(2,6,26,.74),0 0 26px var(--hc);transition:left .38s cubic-bezier(.2,.9,.2,1),top .38s cubic-bezier(.2,.9,.2,1),width .38s cubic-bezier(.2,.9,.2,1),height .38s cubic-bezier(.2,.9,.2,1),border-color .2s;pointer-events:none}
+.lv .cc-hole::before,.lv .cc-hole::after{content:"";position:absolute;width:22px;height:22px;border:5px solid #fff}
+.lv .cc-hole::before{left:-10px;top:-10px;border-right:0;border-bottom:0}
+.lv .cc-hole::after{right:-10px;bottom:-10px;border-left:0;border-top:0}
+.lv .cc-box{position:absolute;width:540px;padding:16px 28px 16px;background:#fff;color:var(--abyss);transform:skewX(-8deg);box-shadow:8px 8px 0 var(--hc);transition:left .38s cubic-bezier(.2,.9,.2,1),top .38s cubic-bezier(.2,.9,.2,1),box-shadow .2s}
+.lv .cc-box>*{transform:skewX(8deg)}
+.lv .cc-h{display:flex;align-items:center;justify-content:space-between}
+.lv .cc-h i{font-style:normal;font-family:var(--pixel);font-size:13px;letter-spacing:.2em;background:var(--abyss);color:var(--hc);padding:4px 10px}
+.lv .cc-h em{font-style:normal;font-family:var(--pixel);font-size:14px;letter-spacing:.12em;color:#56619A}
+.lv .cc-t{display:block;margin:10px 0 6px;font-family:var(--kr-display);font-size:36px;line-height:1.1;letter-spacing:.02em}
+.lv .cc-b{margin:0;font-size:20px;line-height:1.6;font-weight:500;word-break:keep-all}
+.lv .cc-b b{color:var(--cob)}
+.lv .cc-k{margin-top:12px;font-family:var(--pixel);font-size:13px;letter-spacing:.12em;color:#56619A;text-align:right}
+.lv .cc-k span{display:inline-block;min-width:22px;padding:1px 6px;margin-left:10px;border:2px solid var(--abyss);color:var(--abyss);text-align:center}

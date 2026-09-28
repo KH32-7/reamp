@@ -11,18 +11,45 @@ const INST_INFO = {
 };
 const LANE_CODE = { KeyD: 0, KeyF: 1, KeyJ: 2, KeyK: 3, Space: 4 };
 
+/* song length: highlight (intro → 2nd chorus, ~1:40–2:00) or the full song */
+const mmss = t => `${Math.floor(t / 60)}:${String(Math.round(t % 60)).padStart(2, '0')}`;
+function lengthLabels(song) {
+  const full = PREP[song.id] ? PREP[song.id].dur : song.dur;
+  return [song.hl ? `하이라이트 · ${mmss(song.hl + FADE_OUT)}` : '하이라이트 (이 곡은 전곡만)', full ? `전곡 · ${mmss(full)}` : '전곡'];
+}
+function pickLength(song, cb) {
+  const [hl, full] = lengthLabels(song);
+  modal({ title: '얼마나 칠까요?', body: '하이라이트는 2절 후렴까지 치고 끝나요.', buttons: [{ t: hl, fn: () => cb('hl'), cancel: true }, { t: full, fn: () => cb('full') }] });
+}
+
+/* tutorial coach: waiting on the UI prototype review; preview in the game with ?coach=1 */
+const COACH_ON = QS.get('coach') === '1';
+/* tutorial: what each part of the live screen is, one at a time, before the count-in */
+const COACH_PRE = part => [
+  { spot: 'hw', t: '노트', b: `노트가 위에서 내려와요. 판정선에 닿는 순간 같은 줄의 키를 누르세요. 키는 왼쪽부터 <b>${INST_INFO[part].keys}</b>예요.` },
+  { spot: 'line', t: '판정', b: '타이밍이 정확할수록 PERFECT, GREAT, GOOD 순으로 떠요. 놓치면 MISS가 뜨고 콤보가 끊겨요.' },
+  { spot: '.lv-score', t: 'SCORE · RANK', b: '점수와 랭크예요. 정확하게 칠수록 점수가 오르고, 곡이 끝나면 점수로 랭크가 정해져요.' },
+  { spot: '.lv-heat', t: 'CROWD HEAT', b: '관객 반응이에요. 잘 치면 오르고 놓치면 떨어져요. <b>80</b>을 넘으면 AMP 상태가 되고, <b>0</b>이 되면 공연이 멈춰요.', c: '#FF4FA0' },
+  { spot: '.lv-sync', t: 'BAND SYNC', b: '밴드와 얼마나 잘 맞는지 보여 줘요. 흔들리는 멤버를 받쳐 주거나 아이 콘택트에 성공하면 올라가요.' },
+  { spot: '.lv-party', t: '멤버', b: '같이 무대에 선 멤버들이에요. 누군가 흔들리면 여기 이름표가 먼저 깜빡여요.' },
+  { spot: '.lv-pz', t: '일시정지', b: '<b>ESC</b>나 <b>P</b>를 누르면 언제든 멈출 수 있어요. 준비됐으면 카운트를 시작할게요.' },
+];
+
 /* scripted events per scenario (bars are song bars; real songs will use seconds, e.g. blackout at 151 = 2:31) */
 function scenarioEvents(sc, prep, part) {
-  const hasHold = (prep.charts[part] || [[], []])[1].some(n => n.len);
   // カウント四つ (127bpm): vocals from bar 4, guitar comes in at bar 12, chorus 1 at 16, chorus 2 at 40, last chorus at 80
+  // with the coach on, the explanations are paused steps (COACH_PRE before the count-in, coachEvents() mid-song)
+  const hasHold = (prep.charts[part] || [[], []])[1].some(n => n.len);
   if (sc === 'tutorial') return [
-    { type: 'tip', bar: -.5, text: `노트가 판정선에 닿을 때 <b>${INST_INFO[part].keys}</b>를 누르세요`, dur: 5 },
-    ...(part === 'DR' ? [{ type: 'tip', bar: 4, text: '가로로 긴 주황색 막대는 킥이에요. <b>SPACE</b>로 치세요', dur: 4 }] : []),
-    ...(hasHold ? [{ type: 'tip', bar: 7, text: '길게 이어진 노트는 <b>끝날 때까지 누르고 있으세요</b>', dur: 4 }] : []),
-    ...(prep.charts.EX ? [{ type: 'tip', bar: 9.5, text: '반짝이는 <b>보석 노트</b>는 코러스나 퍼커션 소리예요. 어느 악기로든 칠 수 있어요', dur: 4.5, c: '#FF8FC8' }] : []),
-    { type: 'tip', bar: 12.5, text: '하루가 흔들려요. <b>COVER</b> 노트를 쳐서 받쳐 주세요', dur: 4, c: '#2EC7F0' },
+    ...(COACH_ON ? [] : [
+      { type: 'tip', bar: -.5, text: `노트가 판정선에 닿을 때 <b>${INST_INFO[part].keys}</b>를 누르세요`, dur: 5 },
+      ...(part === 'DR' ? [{ type: 'tip', bar: 4, text: '가로로 긴 주황색 막대는 킥이에요. <b>SPACE</b>로 치세요', dur: 4 }] : []),
+      ...(hasHold ? [{ type: 'tip', bar: 7, text: '길게 이어진 노트는 <b>끝날 때까지 누르고 있으세요</b>', dur: 4 }] : []),
+      ...(prep.charts.EX ? [{ type: 'tip', bar: 9.5, text: '반짝이는 <b>보석 노트</b>는 코러스나 퍼커션 소리예요. 어느 악기로든 칠 수 있어요', dur: 4.5, c: '#FF8FC8' }] : []),
+      { type: 'tip', bar: 12.5, text: '하루가 흔들려요. <b>COVER</b> 노트를 쳐서 받쳐 주세요', dur: 4, c: '#2EC7F0' },
+      { type: 'tip', bar: 15, text: '<b>EYE CONTACT</b> 구간이에요. 색칠된 한 마디를 GREAT 이상으로 치세요', dur: 4, c: '#2EC7F0' },
+    ]),
     { type: 'fumble', who: 'haru', bar: 14, beats: 4 },
-    { type: 'tip', bar: 15, text: '<b>EYE CONTACT</b> 구간이에요. 색칠된 한 마디를 GREAT 이상으로 치세요', dur: 4, c: '#2EC7F0' },
     { type: 'eye', who: 'haru', bar: 16, bars: 1, ex: 'pained' },
     { type: 'cameo', who: 'koto', bar: 24 },
     { type: 'eye', who: 'soma', bar: 40, bars: 1 },
@@ -76,6 +103,7 @@ scene('live', {
     <div class="lv-tip"></div>
     <div class="lv-banner"><b></b><small></small></div>
     <div class="lv-count"></div>
+    <div class="lv-coach"><div class="cc-hole"></div><div class="cc-box"><div class="cc-h"><i>TUTORIAL</i><em></em></div><b class="cc-t"></b><p class="cc-b"></p><div class="cc-k"><span>Z</span> 다음 <span>X</span> 건너뛰기</div></div></div>
     <div class="lv-bo"><div class="bo-timer">00:00</div><div class="bo-prompt"><b>RECOVER</b><small>노란 노트를 쳐서 소리를 되살리세요</small></div><div class="bo-err">NO SIGNAL</div></div>
     <div class="lv-load"><div class="ld-ring"></div><b>SOUND CHECK</b><small class="ld-st"></small></div>
     <div class="lv-fail"><div class="fl-dim"></div><div class="fl-word">SILENCE</div><div class="fl-q">관객이 조용해졌다.</div><div class="fl-list"><span>다시 한다</span><span>조금 쉽게 다시 한다</span><span>받아들인다</span></div></div>`,
@@ -96,7 +124,9 @@ scene('live', {
     const part = arg.part || G.inst || 'GT', diff = arg.diff ?? G.diff ?? 1;
     this.part = part;
     el.classList.add('th-' + part.toLowerCase());
-    $('.lv-t', el).textContent = song.title; $('.lv-d', el).textContent = `${DIFFS[diff]} · ${part}`;
+    // highlight version: intro → 2nd chorus, then a fade (the incident keeps the whole song: the cut at 2:31 is canon)
+    const until = arg.scenario === 'incident' ? 0 : (arg.len ?? QS.get('len')) === 'hl' ? song.hl || 0 : 0;
+    $('.lv-t', el).textContent = song.title; $('.lv-d', el).textContent = `${DIFFS[diff]} · ${part}${until ? ' · 하이라이트' : ''}`;
     $('.lv-title', el).textContent = song.title;
     $('.lv-inst b', el).textContent = INST_INFO[part].th; $('.lv-inst small', el).textContent = `${INST_INFO[part].en} · ${INST_INFO[part].keys}`;
     $('.lv-img', el).style.backgroundImage = `url(img/bg/${arg.bg || 'stage_fest'}.webp)`;
@@ -118,7 +148,7 @@ scene('live', {
     const L = this.L = new Live({
       prep, part, diff, party, events, seed: arg.seed,
       noFail: SETTINGS.noFail || arg.noFail || arg.scenario === 'incident',          // the 47 seconds can't be failed tutorial: arg.scenario === 'tutorial',
-      randomFumbles: arg.scenario === 'lab', auto: arg.auto, heat0: arg.heat0, from: arg.from,
+      randomFumbles: arg.scenario === 'lab', auto: arg.auto, heat0: arg.heat0, from: arg.from, until,
       on: (t, d) => this.ev(t, d),
     });
     this.R = Highway(this.cv, L, { k: Math.min(2, (G.scale || 1) * (window.devicePixelRatio || 1)) });
@@ -128,10 +158,14 @@ scene('live', {
     window.addEventListener('keydown', this.onKey, true);
     window.addEventListener('keyup', this.onKeyUp, true);
     this.rawKeys = true;
-    L.start(2.6);
-    this.countdown();
     this.shown = { score: 0, rank: '', syncOn: -1 };
-    this.loop();
+    this.loop();                                     // the highway and HUD draw while the song waits
+    const begin = () => { if (this.L !== L || G.cur !== 'live') return; L.start(2.6); this.countdown(); };
+    // tutorial: the game waits and each part of the screen is explained first; later steps pause the song
+    if (arg.scenario === 'tutorial' && COACH_ON && !arg.auto) {
+      this.coachEvents(L);
+      later(() => this.coach(COACH_PRE(part), begin), 1100);
+    } else begin();
   },
   leave() {
     this.stopLoop();
@@ -154,17 +188,81 @@ scene('live', {
     A($('.lv-inst', el), KF.fromBottom('200%'), T.char, { delay: 300 });
     A(this.cv, [{ clipPath: 'inset(100% 0 0 0)', opacity: .2 }, { clipPath: 'inset(0 0 0 0)', opacity: 1 }], 700, { e: EZ.wipe, delay: 200 });
   },
+  /* 3 · 2 · 1 · GO, about a second apart and on the beat (the engine puts the sticks on the same times) */
   countdown() {
-    const L = this.L, el = this.el, c = $('.lv-count', el), beat = L.beat;
-    const t0 = L.tm.offset;
+    const L = this.L, c = $('.lv-count', this.el), { step, at } = L.cd;
     [3, 2, 1, 'GO!'].forEach((n, i) => {
-      const at = (L.t0 + t0 - (3 - i) * beat - L.ac.currentTime) * 1000;
       setTimeout(() => {
         if (G.cur !== 'live' || this.L !== L) return;
         c.textContent = n; c.classList.toggle('go', n === 'GO!');
-        A(c, [{ scale: '2.4', opacity: 0, rotate: '-12deg' }, { scale: '1', opacity: 1, rotate: '-6deg', offset: .35 }, { scale: '.9', opacity: 0, rotate: '-6deg' }], i === 3 ? 700 : beat * 1000, { e: EZ.slam, fill: 'forwards' });
-      }, Math.max(0, at));
+        c.getAnimations().forEach(a => a.cancel());
+        A(c, [{ scale: '2.4', opacity: 0, rotate: '-12deg' }, { scale: '1', opacity: 1, rotate: '-6deg', offset: .3 }, { scale: '1', opacity: 1, rotate: '-6deg', offset: .7 }, { scale: '.9', opacity: 0, rotate: '-6deg' }], i === 3 ? 700 : step * 1000, { e: EZ.slam, fill: 'forwards' });
+      }, Math.max(0, (at[i] - L.ac.currentTime) * 1000));
     });
+  },
+
+  /* ---------- tutorial coach: the song waits while one thing on screen is lit and explained ---------- */
+  coach(steps, done) {
+    const el = this.el, cc = $('.lv-coach', el), hole = $('.cc-hole', cc), box = $('.cc-box', cc);
+    let i = -1;
+    const finish = () => {
+      this.menu = null; cc.onclick = null;
+      A(cc, [{ opacity: 1 }, { opacity: 0 }], 220, { fill: 'forwards' }).finished.then(() => { cc.classList.remove('on'); cc.getAnimations().forEach(a => a.cancel()); done && done(); });
+    };
+    const next = () => {
+      if (++i >= steps.length) return finish();
+      const s = steps[i], r = this.spot(s.spot);
+      Object.assign(hole.style, { left: r.x + 'px', top: r.y + 'px', width: r.w + 'px', height: r.h + 'px' });
+      cc.style.setProperty('--hc', s.c || '#4FE3FF');
+      // the box sits beside the lit area, on whichever side has room
+      const bw = 540, wide = r.w > 700;
+      const x = wide ? 40 : r.x + r.w / 2 < 800 ? Math.min(r.x + r.w + 36, 1600 - bw - 40) : Math.max(40, r.x - bw - 36);
+      const y = wide ? 330 : Math.max(40, Math.min(600, r.y));
+      Object.assign(box.style, { left: x + 'px', top: y + 'px' });
+      $('.cc-h em', box).textContent = steps.length > 1 ? `${i + 1} / ${steps.length}` : '';
+      $('.cc-t', box).textContent = s.t; $('.cc-b', box).innerHTML = s.b;
+      box.getAnimations().forEach(a => a.cancel());
+      A(box, [{ translate: '30px 0', opacity: 0 }, { translate: '0 0', opacity: 1 }], T.slam, { e: EZ.slam });
+    };
+    cc.classList.add('on'); cc.getAnimations().forEach(a => a.cancel());
+    A(cc, KF.fade, 220);
+    cc.onclick = e => { e.stopPropagation(); next(); };
+    this.menu = e => {
+      if (e.repeat) return;
+      if (e.code === 'Enter' || e.code === 'KeyZ' || e.code === 'Space') next();
+      else if (e.code === 'Escape' || e.code === 'KeyX') { i = steps.length; finish(); }
+    };
+    next();
+  },
+  /* stage-space rectangle for a coach step: 'hw' the whole highway, 'line' the judgement line + keys, or a selector */
+  spot(k) {
+    const g = this.R.geom, pad = 12;
+    if (k === 'hw') return { x: g.CX - g.halfW - 20, y: g.HOR + 60, w: g.halfW * 2 + 40, h: 900 - g.HOR - 76 };
+    if (k === 'line') return { x: g.CX - g.halfW - 20, y: g.LINE - 64, w: g.halfW * 2 + 40, h: 900 - g.LINE + 50 };
+    const t = $(k, this.el);
+    if (!t) return { x: 800, y: 450, w: 0, h: 0 };
+    const sr = this.el.getBoundingClientRect(), s = 1600 / sr.width, b = t.getBoundingClientRect();
+    return { x: (b.left - sr.left) * s - pad, y: (b.top - sr.top) * s - pad, w: b.width * s + pad * 2, h: b.height * s + pad * 2 };
+  },
+  /* mid-song explanations, each shown just before its thing first reaches you */
+  coachEvents(L) {
+    const ev = (at, steps) => at > 1 && L.events.push({ type: 'coach', at, steps, done: false });
+    const lead = 1.6, notes = L.notes;
+    const kick = notes.find(n => n.kind === 'kick'), hold = notes.find(n => n.len && n.kind !== 'extra'), gem = notes.find(n => n.kind === 'extra');
+    if (kick) ev(kick.t - lead, [{ spot: 'hw', t: '킥 노트', b: '가로로 긴 주황색 막대는 킥이에요. <b>SPACE</b>로 치세요.', c: '#FF7A3D' }]);
+    if (hold) ev(hold.t - lead, [{ spot: 'hw', t: '롱 노트', b: '길게 이어진 노트예요. 판정선에 닿으면 누르고, <b>꼬리가 끝날 때까지</b> 떼지 마세요. 중간에 떼면 MISS가 돼요.' }]);
+    if (gem) ev(gem.t - lead, [{ spot: 'hw', t: '보석 노트', b: '반짝이는 노트는 코러스나 퍼커션 소리예요. 어떤 악기를 골랐든 <b>같이 쳐야</b> 해요.', c: '#FF8FC8' }]);
+    const f = L.members.flatMap(m => m.fumbles.map(x => ({ m, x }))).sort((a, b) => a.x.t0 - b.x.t0)[0];
+    if (f) ev(f.x.t0 - 1.9, [{ spot: `.lv-prow[data-id="${f.m.id}"]`, t: 'COVER', b: `${f.m.name}의 연주가 흔들리고 있어요. 곧 <b>${f.m.name} 색으로 칠해진 노트</b>가 내 레인으로 내려와요. 그 노트를 치면 대신 받쳐 줄 수 있어요.`, c: f.m.c }]);
+    const w = L.eyes[0];
+    if (w) ev(w.t0 - L.beat * 3 - .3, [{ spot: 'hw', t: 'EYE CONTACT', b: `곧 ${w.en}와 눈이 맞는 구간이에요. <b>색칠된 한 마디</b>를 전부 GREAT 이상으로 치면 밴드 싱크가 크게 올라요.`, c: w.c }]);
+  },
+  coachMid(e) {
+    const L = this.L;
+    if (L.finished || L.bo) return;
+    if (L.holding.some(Boolean) || this.menu) { e.done = false; e.at = L.time + .3; return; }   // never cut into a held note
+    L.pause();
+    this.coach(e.steps, () => this.resumeCount());
   },
 
   loop() {
@@ -253,6 +351,7 @@ scene('live', {
     else if (type === 'milestone') this.banner(`${d.combo} COMBO`, '', null, true);
     else if (type === 'amp') { el.classList.toggle('amp', d.on); if (d.on) this.banner('AMP UP!', '관객이 달아올랐다', '#FF4FA0'); }
     else if (type === 'tip') this.tip(d);
+    else if (type === 'coach') this.coachMid(d);
     else if (type === 'cameo') this.cameo(d.who);
     else if (type === 'silence') { el.classList.add('silence'); this.banner('SILENCE', `노란 노트 ${d.of}개 중 ${d.need}개를 치면 소리가 돌아온다`, '#FFE14A'); }
     else if (type === 'recover') { el.classList.remove('silence'); this.banner('RE:AMP!', '소리가 돌아왔다', '#D7FF3A'); A(el, [{ filter: 'brightness(2)' }, { filter: 'brightness(1)' }], 400); }
@@ -537,7 +636,7 @@ scene('result', {
 });
 
 /* ================= RHYTHM LAB ================= */
-const LAB = { song: 0, inst: 0, diff: 1, sc: 0, party: 0, auto: false };
+const LAB = { song: 0, inst: 0, diff: 1, len: 0, sc: 0, party: 0, auto: false };
 const LAB_SC = [['lab', '일반 (랜덤 흔들림 · 아이 콘택트)'], ['tutorial', '프롤로그 1곡째 · 튜토리얼'], ['incident', '프롤로그 2곡째 · 사건 + 47초']];
 scene('lab', {
   cls: 'lab', back: false, via: 'shutter',
@@ -573,6 +672,7 @@ scene('lab', {
       ['곡', SONGS.map(s => s.title), 'song'],
       ['악기', ['GT', 'BA', 'DR', 'KEY'].map(k => `${INST_INFO[k].en}<small>${INST_INFO[k].th}</small>`), 'inst'],
       ['난이도', DIFFS, 'diff'],
+      ['길이', lengthLabels(SONGS[LAB.song]), 'len'],
       ['시나리오', LAB_SC.map(x => x[1]), 'sc'],
       ['파티', ['SIGNAL LOST (1년 전)', '새 밴드'], 'party'],
       ['노트 속도', [`×${SETTINGS.speed.toFixed(1)}`], 'speed'],
@@ -587,7 +687,7 @@ scene('lab', {
     $('.lab-songs', el).innerHTML = SONGS.map((s, i) => `<div class="ls-row${i === LAB.song ? ' on' : ''}" data-i="${i}"><div class="ls-jk" style="background-image:url(${s.jk || 'img/jk/47.webp'})"></div><div><b>${s.title}</b><small>${s.sub}</small></div></div>`).join('');
     $$('.ls-row', el).forEach(r => r.addEventListener('click', () => { LAB.song = +r.dataset.i; this.paint(); this.analyze(); }));
     $('.lab-opts', el).innerHTML = rows.map(([k, vals, id], i) => {
-      const cur = { song: LAB.song, inst: LAB.inst, diff: LAB.diff, sc: LAB.sc, party: LAB.party }[id] ?? 0;
+      const cur = { song: LAB.song, inst: LAB.inst, diff: LAB.diff, len: LAB.len, sc: LAB.sc, party: LAB.party }[id] ?? 0;
       return `<div class="lo-row${i === this.row ? ' sel' : ''}" data-r="${i}"><span class="lo-k">${k}</span><span class="lo-v"><i data-d="-1">◀</i><b>${vals[cur] ?? vals[0]}</b><i data-d="1">▶</i></span></div>`;
     }).join('');
     $$('.lo-row', el).forEach(r => {
@@ -602,6 +702,7 @@ scene('lab', {
     if (id === 'song') { LAB.song = wrap(LAB.song, SONGS.length); this.analyze(); }
     else if (id === 'inst') { LAB.inst = wrap(LAB.inst, 4); this.info(); }
     else if (id === 'diff') { LAB.diff = wrap(LAB.diff, 4); this.info(); }
+    else if (id === 'len') LAB.len = wrap(LAB.len, 2);
     else if (id === 'sc') LAB.sc = wrap(LAB.sc, 3);
     else if (id === 'party') LAB.party = wrap(LAB.party, 2);
     else if (id === 'speed') { SETTINGS.speed = Math.max(.6, Math.min(2, +(SETTINGS.speed + d * .1).toFixed(1))); saveSettings(); }
@@ -642,7 +743,7 @@ scene('lab', {
   },
   enter() {
     const el = this.el;
-    this.row = Math.min(this.row, 9);
+    this.row = Math.min(this.row, this.rows().length);
     this.paint();
     this.analyze();
     A($('.lab-img', el), KF.fade, 700);
@@ -656,7 +757,7 @@ scene('lab', {
   play() {
     const part = ['GT', 'BA', 'DR', 'KEY'][LAB.inst];
     G.inst = part; G.diff = LAB.diff;
-    go('live', { via: 'slam', arg: { song: SONGS[LAB.song], part, diff: LAB.diff, scenario: LAB_SC[LAB.sc][0], party: LAB.party ? 'band' : 'signal', auto: LAB.auto } });
+    go('live', { via: 'slam', arg: { song: SONGS[LAB.song], part, diff: LAB.diff, scenario: LAB_SC[LAB.sc][0], party: LAB.party ? 'band' : 'signal', auto: LAB.auto, len: LAB.len ? 'full' : 'hl' } });
   },
   key(k) {
     const n = this.rows().length;

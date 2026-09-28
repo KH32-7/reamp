@@ -34,7 +34,7 @@ const STORY = {
   prologue: [
     { adv: GREENROOM, bg: 'backstage', place: '<b>블루 아워 페스</b> 서브 스테이지 대기실', date: '<div class="datechip past"><b>1년 전</b><span>SUN<small>저녁</small></span><i class="moon"></i><em>SIGNAL LOST</em></div>' },
     { card: ['SET 1 / 2', 'SIGNAL LOST', '블루 아워 페스 · 서브 스테이지'] },
-    { live: { song: 'count4', scenario: 'tutorial', bg: 'stage_fest', skipResult: true } },
+    { live: { song: 'count4', scenario: 'tutorial', len: 'hl', bg: 'stage_fest', skipResult: true } },
     { card: ['SET 2 / 2', '두 번째 곡', '생중계 중'] },
     { live: { song: 'hanpaku', scenario: 'incident', bg: 'stage_fest', noFail: true } },
     { card: ['그 후', '몽타주 자리', '클립 확산 · 청력 검사 · 조용해진 단톡방 · 하루 전속 계약 · 옷장 속 기타 케이스'], long: true },

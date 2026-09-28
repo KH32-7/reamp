@@ -243,13 +243,13 @@ const W = {
     this.begin();
     const done = () => { this.apply(s.eff); this.summary(s.place, () => this.afterAction(s)); };
     if (s.practice) {
-      return adv(s.script, { bg: s.bg[night ? 1 : 0], place: this.place(s, night), next: () => go('live', { via: 'slam', push: false, arg: {
-        song: 'count4', part: G.inst || 'GT', diff: G.diff ?? 1, party: 'solo', scenario: 'practice', noFail: true, bg: s.bg[1],
+      return adv(s.script, { bg: s.bg[night ? 1 : 0], place: this.place(s, night), next: () => pickLength(SONGS[0], len => go('live', { via: 'slam', push: false, arg: {
+        song: 'count4', part: G.inst || 'GT', diff: G.diff ?? 1, party: 'solo', scenario: 'practice', noFail: true, bg: s.bg[1], len,
         next: r => {
           this.apply({ mt: r.rank === 'S' || r.rank === 'SS' ? 5 : r.rank === 'A' ? 3 : 1 });
           adv(S_STUDIO_AFTER, { bg: s.bg[night ? 1 : 0], place: this.place(s, night), next: done });
         },
-      } }) });
+      } })) });
     }
     adv(s.script, { bg: s.bg[night ? 1 : 0], place: this.place(s, night), next: done });
   },
