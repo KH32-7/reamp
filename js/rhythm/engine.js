@@ -240,7 +240,8 @@ class Live {
   raw(p) {
     const ac = this.ac, ts = ac.getOutputTimestamp ? ac.getOutputTimestamp() : null;
     let ct;
-    if (ts && ts.contextTime > 0 && ts.performanceTime > 0) ct = ts.contextTime + (p - ts.performanceTime) / 1000;
+    // the output timestamp goes stale while the context is suspended; right after a resume it would add the whole pause
+    if (ts && ts.contextTime > 0 && ts.performanceTime > 0 && ac.state === 'running' && p - ts.performanceTime < 150) ct = ts.contextTime + (p - ts.performanceTime) / 1000;
     else ct = ac.currentTime - (ac.outputLatency || ac.baseLatency || 0);
     return ct - this.t0 - this.offset;
   }
@@ -254,9 +255,15 @@ class Live {
 
   pause() { if (!this.running || this.paused || this.finished) return; this.paused = true; this.ac.suspend(); }
   resume() {
-    if (!this.paused) return;
-    this.paused = false; this.sm = null; this.ac.resume();
-    for (const h of this.holding) if (h && !this.down[h.lane]) this.holdEnd(h, false);   // released while paused
+    if (!this.paused || this.resuming) return;
+    this.resuming = true;
+    // the song time only moves again once the audio really runs: un-pausing earlier let the clock jump ahead
+    this.ac.resume().then(() => {
+      this.resuming = false;
+      if (!this.paused || !this.running) return;
+      this.paused = false; this.sm = null;
+      for (const h of this.holding) if (h && !this.down[h.lane]) this.holdEnd(h, false);   // released while paused
+    });
   }
   stop() {
     this.running = false;

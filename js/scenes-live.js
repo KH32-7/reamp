@@ -112,6 +112,15 @@ scene('live', {
     $('.lv-pz', el).addEventListener('click', e => { e.stopPropagation(); if (G.cur === 'live' && this.L && !this.L.finished && !this.menu) this.pauseMenu(); });
     this.onKey = e => this.key2(e, true);
     this.onKeyUp = e => this.key2(e, false);
+    // leaving the window mid-song pauses it (the audio would run on while the screen stops); held keys are let go
+    this.onAway = () => {
+      const L = this.L;
+      if (G.cur !== 'live' || !L) return;
+      for (let l = 0; l < 5; l++) { this.R && this.R.press(l, false); L.down[l] = false; }
+      if (!this.menu && L.running && !L.paused && !L.finished && !L.bo) this.pauseMenu();
+    };
+    window.addEventListener('blur', this.onAway);
+    document.addEventListener('visibilitychange', () => { if (document.hidden) this.onAway(); });
   },
   resize() { if (this.R) this.R.resize(Math.min(2, (G.scale || 1) * (window.devicePixelRatio || 1))); },
 

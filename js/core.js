@@ -16,9 +16,10 @@ const store = {
   get(k, d) { try { const v = localStorage.getItem('reamp.' + k); return v ? JSON.parse(v) : d; } catch (e) { return d; } },
   set(k, v) { try { localStorage.setItem('reamp.' + k, JSON.stringify(v)); } catch (e) {} },
 };
-const SETTINGS = Object.assign({ vol: 1, offset: 0, speed: 1, noFail: false, partVol: 1.5, vocals: true }, store.get('settings', {}));
+const SETTINGS = Object.assign({ vol: 1, offset: 0, speed: 1.2, noFail: false, partVol: 1.5, vocals: true }, store.get('settings', {}));
 if (!(SETTINGS.partVol > 0)) SETTINGS.partVol = 1.5;   // your own instrument: ×1.5 over the record by default
 if (SETTINGS.vol === .9) SETTINGS.vol = 1;   // the old default left the whole game a notch quiet
+if (!SETTINGS.sp12) { if (SETTINGS.speed === 1) SETTINGS.speed = 1.2; SETTINGS.sp12 = true; }   // note speed default moved to ×1.2 (once, for old saves)
 function saveSettings() { store.set('settings', SETTINGS); if (window.AU && AU.master) AU.master.gain.value = SETTINGS.vol; }
 const SAVE = Object.assign({ profile: null, progress: null }, store.get('save', {}));
 function writeSave() { store.set('save', SAVE); }
