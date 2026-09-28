@@ -1,6 +1,6 @@
 /* RE:AMP! rhythm — the live engine.
    Clock: WebAudio output timestamp, smoothed against performance.now so visuals and input share one timeline.
-   Stems: every stem plays in sync; your part mutes when you miss (you hear your own mistakes),
+   Stems: every stem plays in sync; your part dips for a moment when you miss (you hear your own mistakes),
    member parts dip when a member fumbles and nobody covers.
    Gauges: judgement (score/combo) · BAND SYNC · CROWD HEAT. Heat 0 → silence → recovery or fail.
    Events: tip · fumble · eye · memberDrop · blackout (the 47 seconds). */
@@ -133,11 +133,13 @@ class Live {
     lead = Math.max(lead, 2.2 - (first - this.from) + .6);
     this.t0 = ac.currentTime + lead - this.from;
     this.music = ac.createGain(); this.lp = ac.createBiquadFilter(); this.lp.type = 'lowpass'; this.lp.frequency.value = 20000;
-    // limiter at the end so a boosted part never clips
+    // the stems sum well under a finished master (~-19 dB RMS); bring each song to a common level
+    const norm = ac.createGain(); norm.gain.value = this.normGain();
+    // peak limiter at the end: only the loudest hits touch it, so the mix doesn't pump
     const lim = ac.createDynamicsCompressor();
-    lim.threshold.value = -3; lim.knee.value = 4; lim.ratio.value = 20; lim.attack.value = .002; lim.release.value = .12;
-    this.music.connect(this.lp).connect(lim).connect(AU.master);
-    this.boost = Math.pow(10, (SETTINGS.partDb ?? 3) / 20);      // your own instrument sits a little above the record
+    lim.threshold.value = -1.5; lim.knee.value = 1; lim.ratio.value = 20; lim.attack.value = .001; lim.release.value = .1;
+    this.music.connect(norm).connect(this.lp).connect(lim).connect(AU.master);
+    this.boost = SETTINGS.partVol || 1.5;                          // your own instrument sits above the record (×1.5 by default)
     this.gains = {}; this.srcs = [];
     for (const [role, buf] of Object.entries(this.prep.bufs)) {
       const g = ac.createGain(), s = ac.createBufferSource();
@@ -187,7 +189,32 @@ class Live {
   setCrowd() { if (this.crowd && !this.bo) this.crowd.gain.setTargetAtTime(this.silence ? 0 : .012 + this.heat / 100 * .05, this.ac.currentTime, .4); }
   partGain(v, n) {
     const g = n && n.kind === 'extra' ? this.gains[n.role] : this.gPart;
-    if (g) g.gain.setTargetAtTime(v * (g === this.gPart ? this.boost : 1), this.ac.currentTime, .012);
+    if (!g) return;
+    const t = this.ac.currentTime;
+    g.gain.cancelScheduledValues(t);
+    g.gain.setTargetAtTime(v * (g === this.gPart ? this.boost : 1), t, .012);
+  }
+  /* a miss: the part drops for a moment and comes back on its own (it used to stay muted until your next hit) */
+  duck(n, depth = .12, len = .45) {
+    const g = n && n.kind === 'extra' ? this.gains[n.role] : this.gPart;
+    if (!g || this.bo) return;
+    const full = g === this.gPart ? this.boost : 1, t = this.ac.currentTime;
+    g.gain.cancelScheduledValues(t);
+    g.gain.setValueAtTime(g.gain.value, t);
+    g.gain.setTargetAtTime(full * depth, t, .01);
+    g.gain.setTargetAtTime(full, t + len, .08);
+  }
+  /* loudness of the summed stems, measured once per song; -14.5 dB RMS target, capped both ways */
+  normGain() {
+    const p = this.prep;
+    if (p.norm) return p.norm;
+    const chans = Object.values(p.bufs).map(b => b.getChannelData(0));
+    if (!chans.length) return 1;
+    const len = Math.min(...chans.map(d => d.length));
+    let ss = 0, n = 0;
+    for (let i = 0; i < len; i += 16) { let v = 0; for (const d of chans) v += d[i]; ss += v * v; n++; }
+    const db = 10 * Math.log10(ss / n + 1e-12);
+    return (p.norm = Math.max(.5, Math.min(2.5, Math.pow(10, (-14.5 - db) / 20))));
   }
 
   /* ---------- clock ---------- */
@@ -249,7 +276,7 @@ class Live {
     this.holding[h.lane] = null;
     h.hold = ok ? 'ok' : 'drop';
     if (ok) { this.pts += 1; this.combo++; this.maxCombo = Math.max(this.maxCombo, this.combo); }
-    else { this.combo = 0; this.partGain(.08, h); this.heatAdd(-this.missLoss() * .5); }
+    else { this.combo = 0; this.duck(h); this.heatAdd(-this.missLoss() * .5); }
     this.score = Math.round(1e6 * this.pts / this.total);
     this.on('hold', { n: h, ok });
   }
@@ -280,7 +307,7 @@ class Live {
       if (n.len) n.hold = 'drop';                                  // a missed head still shows its tail, greyed
       if (this.combo >= 20) this.on('break', { combo: this.combo });
       this.combo = 0;
-      this.partGain(.06, n); this.thunk();
+      this.duck(n); this.thunk();
       this.heatAdd(-this.missLoss());
       this.sync += (15 - this.sync) * .02;
     }

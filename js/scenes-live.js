@@ -577,7 +577,7 @@ scene('lab', {
       ['파티', ['SIGNAL LOST (1년 전)', '새 밴드'], 'party'],
       ['노트 속도', [`×${SETTINGS.speed.toFixed(1)}`], 'speed'],
       ['판정 오프셋', [`${SETTINGS.offset > 0 ? '+' : ''}${SETTINGS.offset} ms`], 'offset'],
-      ['내 악기 볼륨', [SETTINGS.partDb ? `원곡 +${SETTINGS.partDb}dB` : '원곡 그대로'], 'partdb'],
+      ['내 악기 볼륨', [SETTINGS.partVol === 1 ? '원곡 그대로 (×1)' : `×${SETTINGS.partVol}`], 'partdb'],
       ['노페일', [SETTINGS.noFail ? 'ON' : 'OFF'], 'nofail'],
       ['오토플레이', [LAB.auto ? 'ON (구경)' : 'OFF'], 'auto'],
     ];
@@ -606,7 +606,7 @@ scene('lab', {
     else if (id === 'party') LAB.party = wrap(LAB.party, 2);
     else if (id === 'speed') { SETTINGS.speed = Math.max(.6, Math.min(2, +(SETTINGS.speed + d * .1).toFixed(1))); saveSettings(); }
     else if (id === 'offset') { SETTINGS.offset = Math.max(-200, Math.min(200, SETTINGS.offset + d * 5)); saveSettings(); }
-    else if (id === 'partdb') { const v = [0, 3, 6], i = v.indexOf(SETTINGS.partDb ?? 3); SETTINGS.partDb = v[(i + d + 3) % 3]; saveSettings(); }
+    else if (id === 'partdb') { const v = [1, 1.5, 2], i = Math.max(0, v.indexOf(SETTINGS.partVol)); SETTINGS.partVol = v[(i + d + 3) % 3]; saveSettings(); }
     else if (id === 'nofail') { SETTINGS.noFail = !SETTINGS.noFail; saveSettings(); }
     else if (id === 'auto') LAB.auto = !LAB.auto;
     this.paint();
