@@ -380,7 +380,7 @@ scene('live', {
       $('.bo-prompt', el).hidden = true;
       const e = $('.bo-err', el); e.hidden = false;
       A(e, [{ opacity: 0, translate: '-8px 0' }, { opacity: 1, translate: '6px 0' }, { opacity: .6, translate: '-3px 0' }, { opacity: 1, translate: '0 0' }, { opacity: 0 }], 900, { e: 'steps(6)' }).finished.then(() => { e.hidden = true; });
-    } else if (type === 'handsStop') { el.classList.add('hands'); }
+    } else if (type === 'handsStop') { el.classList.add('hands'); this.fall(); }
     else if (type === 'end') this.end(d);
   },
 
@@ -468,6 +468,23 @@ scene('live', {
       else timer.textContent = `00:${String(Math.round(t0)).padStart(2, '0')}`;
     };
     tick();
+  },
+
+  /* the end of the 47 seconds: the stage tips over and goes dark (the protagonist collapses; everyone sees it) */
+  fall() {
+    const el = this.el, L = this.L, ac = L.ac, out = L.sfx;
+    el.classList.add('fall');
+    const beat = (t, v) => {                         // a heartbeat heard from inside: lub-dub
+      for (const [k, f, g] of [[0, 62, v], [.16, 52, v * .7]]) {
+        const o = ac.createOscillator(), gg = ac.createGain(); o.frequency.setValueAtTime(f * 1.6, t + k); o.frequency.exponentialRampToValueAtTime(f, t + k + .08);
+        gg.gain.setValueAtTime(0, t + k); gg.gain.linearRampToValueAtTime(g, t + k + .01); gg.gain.exponentialRampToValueAtTime(.001, t + k + .3);
+        o.connect(gg).connect(out); o.start(t + k); o.stop(t + k + .35);
+      }
+    };
+    const t = ac.currentTime;
+    beat(t + .1, .9); beat(t + .95, .8); beat(t + 1.9, .6);
+    setTimeout(() => { if (this.L === L) L.boom(); }, 2250);   // the floor
+    if (L.tinnG) { L.tinnG.gain.cancelScheduledValues(t); L.tinnG.gain.setValueAtTime(L.tinnG.gain.value, t); L.tinnG.gain.linearRampToValueAtTime(.06, t + 1.8); L.tinnG.gain.linearRampToValueAtTime(0, t + 2.3); }
   },
 
   /* ---------- keyboard (raw, for timing) ---------- */

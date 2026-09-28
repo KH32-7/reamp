@@ -5,12 +5,12 @@
 
 const AFTER47 = [
   // 1 · that night
-  { shot: 'phone', kind: 'place', text: '8월 11일 · 밤' },
+  { shot: 'phone', kind: 'place', text: '8월 11일 · 밤 · 나기사카 시립병원' },
   { shot: 'phone', kind: 'clock', text: '23:47' },
   { shot: 'phone', kind: 'date', text: '8월 11일 (일)' },
   { shot: 'phone', kind: 'noti', who: 'PULSE', text: '@bluehour_live 님이 회원님을 태그했습니다.' },
-  { shot: 'phone', kind: 'noti', who: 'PULSE', text: '【방송사고】 SIGNAL LOST 무대 도중 47초 무음… 센터는 그대로 굳어버림' },
-  { shot: 'phone', kind: 'noti', who: 'SIGNAL LOST', text: '소마: 다들 들어갔어?' },
+  { shot: 'phone', kind: 'noti', who: 'PULSE', text: '【방송사고】 SIGNAL LOST 47초 무음… 굳어 있던 센터, 결국 무대에서 쓰러져' },
+  { shot: 'phone', kind: 'noti', who: 'SIGNAL LOST', text: '소마: 병원 어디야? 지금 가도 돼?' },
   { shot: 'phone', kind: 'noti', who: '부재중 전화', text: '키리야 (3)' },
   { shot: 'phone', kind: 'noti', who: 'PULSE', text: '회원님이 언급된 게시물이 1,248개 있습니다.' },
   { shot: 'phone', kind: 'noti', who: 'PULSE', text: '「47초 버티기 챌린지」에 회원님이 태그되었습니다.' },
@@ -18,7 +18,7 @@ const AFTER47 = [
   { shot: 'phone', kind: 'noti', who: 'PULSE', text: '@riff_daily: 음향사고가 아니라 실력사고' },
   { shot: 'phone', kind: 'noti', who: '문자', text: '저장 안 된 번호: 괜찮으면 연락 줘. 0dB 세리자와' },
   { shot: 'phone', kind: 'noti', who: 'PULSE', text: '새 팔로워 2,031명' },
-  { shot: 'phone', kind: 'cap', text: '그날 밤은 휴대폰 진동이 멈추지 않았다.' },
+  { shot: 'phone', kind: 'cap', text: '그날 밤, 병원 침대 옆에서 휴대폰 진동이 멈추지 않았다.' },
   { shot: 'phone', kind: 'cap', text: '무대 영상은 벌써 「47초 프리즈」라는 이름으로 돌고 있었다.' },
   { shot: 'phone', kind: 'cap', text: '휴대폰을 뒤집어 놓았다. 진동은 그래도 손바닥으로 전해졌다.' },
   // 2 · the hearing test
@@ -43,7 +43,7 @@ const AFTER47 = [
   { shot: 'news', kind: 'cmt', who: '@riff_daily', text: '47초 그 밴드? 기타만 살아남았네ㅋㅋ' },
   { shot: 'news', kind: 'cmt', who: '@minori_07', text: '이럴 줄 알았음' },
   { shot: 'news', kind: 'cmt', who: '@k_n', text: '센터만 불쌍하게 됐다' },
-  { shot: 'news', kind: 'cmt', who: '@anon_2231', text: '배신자 소리 들어도 할 말 없지' },
+  { shot: 'news', kind: 'cmt', who: '@anon_2231', text: '쓰러진 멤버 두고 혼자 계약이라니' },
   { shot: 'news', kind: 'cmt', who: '@lol_lol', text: '배신자' },
   { shot: 'news', kind: 'cmt', who: '@nana', text: '배신자ㅋㅋ' },
   { shot: 'news', kind: 'word', text: '배신자' },
@@ -57,7 +57,7 @@ const AFTER47 = [
   { shot: 'chat', kind: 'old', who: '하루', text: '인이어 예비 하나씩 챙겨' },
   { shot: 'chat', kind: 'old', who: '@NAME', text: '알았어' },
   { shot: 'chat', kind: 'day', text: '8월 11일 (일)' },
-  { shot: 'chat', kind: 'msg', who: '소마', text: '다들 들어갔어?' },
+  { shot: 'chat', kind: 'msg', who: '소마', text: '병원 어디야? 지금 가도 돼?' },
   { shot: 'chat', kind: 'msg', who: '키리야', text: '레이블에서 연락 왔어. 내일 사무실로 오래' },
   { shot: 'chat', kind: 'msg', who: '소마', text: '@NAME 괜찮아? 답 좀 해 줘' },
   { shot: 'chat', kind: 'type', text: '사실 그때 귀가' },

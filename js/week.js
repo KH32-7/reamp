@@ -48,7 +48,7 @@ const S_ARRIVE = [
   { who: '마스크 쓴 여자', ch: 'rui', ex: 'neutral', text: '점장님, 모니터 스피커에서 또 하울링 나요. 이거 언제 고쳐 줘요?' },
   { who: '세리자와 점장', text: '마침 고칠 사람 왔어. 인사해. 오늘부터 여기서 일할 애야.' },
   { who: '마스크 쓴 여자', ch: 'rui', ex: 'surprise', text: '어? 잠깐만. 그 얼굴……' },
-  { who: '마스크 쓴 여자', ch: 'rui', ex: 'surprise', text: '너, 「47초」 영상에서 무대 위에 굳어 있던 사람이지?' },
+  { who: '마스크 쓴 여자', ch: 'rui', ex: 'surprise', text: '너, 「47초」 영상에서 무대 위에 굳어 있다가 쓰러진 사람이지?' },
   { choice: ['"사람 잘못 봤어."', '"맞아, 나야."', '(말없이 모니터 스피커 쪽으로 간다)'], ch: 'rui', ex: 'neutral', eff: [{ bond: { rui: 0 } }, { bond: { rui: 2 }, mt: -2 }, { bond: { rui: 1 }, stage: 1 }] },
   { who: '마스크 쓴 여자', ch: 'rui', ex: ['pout', 'neutral', 'surprise'], text: ['거짓말 못 하네. 목소리 떨리는데.', '그렇게 바로 인정할 줄은 몰랐어.', '뭐야, 대답도 안 하고 일부터 해?'] },
   { who: '루이', ch: 'rui', ex: 'neutral', text: '난 아마네 루이. 다음 주 토요일 오픈 마이크에 나가는데, 아직 반주해 줄 사람이 없어.' },

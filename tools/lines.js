@@ -32,24 +32,33 @@ if (cmd === 'export') {
   fs.writeFileSync(out, csv);
   console.log(`data/lines.csv · ${csv.split('\r\n').length - 2} lines`);
 } else if (cmd === 'merge') {
+  // walks the code's lines in order; each keeps the sheet's edit (unless stale) and the new rows written under it
   const rows = L.parseCSV(fs.readFileSync(arg, 'utf8'));
   const head = rows.shift(), col = n => head.findIndex(h => h.trim().startsWith(n));
   const K = col('key'), W = col('화자'), D = col('대사'), O = col('원문');
-  const cells = Object.fromEntries(L.lineCells().map(c => [c.key, c]));
-  const keep = [['key', '장면', '화자', '대사', '원문 (고치지 마세요)']];
-  let changed = 0; const stale = [];
-  const seen = new Set();
+  const byKey = {}, under = {}; let last = '^';
   for (const r of rows) {
-    const c = cells[r[K]]; if (!c) continue;
-    seen.add(c.key);
-    if (O >= 0 && r[O] !== c.text) { stale.push(`${c.key}  시트 원문: ${r[O]}  /  코드: ${c.text}`); keep.push([c.key, c.scene, c.who, c.text, c.text]); continue; }
-    if (r[D] !== c.text || (r[W] && r[W] !== c.who)) changed++;
-    keep.push([c.key, c.scene, r[W] || c.who, r[D], c.text]);
+    const k = (r[K] || '').trim();
+    if (k) { byKey[k] = r; last = k; } else if ((r[D] || '').trim()) (under[last] = under[last] || []).push(r);
   }
-  for (const c of Object.values(cells)) if (!seen.has(c.key)) keep.push([c.key, c.scene, c.who, c.text, c.text]);   // lines added to the code since
+  const keep = [['key', '장면', '화자', '대사', '원문 (고치지 마세요)']];
+  let changed = 0, added = 0, removed = 0; const stale = [];
+  const extra = (k, scene) => (under[k] || []).forEach(r => { keep.push(['', scene + ' · 추가', r[W] || '(내레이션)', r[D], '']); added++; });
+  extra('^', '(맨 앞)');
+  for (const c of L.lineCells()) {
+    const r = byKey[c.key];
+    if (!r) keep.push([c.key, c.scene, c.who, c.text, c.text]);                     // a line added to the code since
+    else if (O >= 0 && r[O] !== c.text) { stale.push(`${c.key}  시트 원문: ${r[O]}  /  코드: ${c.text}`); keep.push([c.key, c.scene, c.who, c.text, c.text]); }
+    else {
+      if ((r[D] || '').trim() === '(삭제)') removed++;
+      else if (r[D] !== c.text || (r[W] && r[W] !== c.who)) changed++;
+      keep.push([c.key, c.scene, r[W] || c.who, r[D], c.text]);
+    }
+    extra(c.key, c.scene);
+  }
   const cell = s => /[",\n\r]/.test(s) ? `"${String(s).replace(/"/g, '""')}"` : String(s);
-  fs.writeFileSync(out, '﻿' + keep.map(r => r.map(cell).join(',')).join('\r\n') + '\r\n');
-  console.log(`바뀐 줄 ${changed} · 코드가 바뀌어 건너뛴 줄 ${stale.length}`);
+  fs.writeFileSync(out, '\ufeff' + keep.map(r => r.map(cell).join(',')).join('\r\n') + '\r\n');
+  console.log(`바뀐 줄 ${changed} · 추가 ${added} · 삭제 ${removed} · 코드가 바뀌어 건너뛴 줄 ${stale.length}`);
   stale.forEach(s => console.log('  ' + s));
 } else {
   console.log('usage: node tools/lines.js export | merge <sheet.csv>');

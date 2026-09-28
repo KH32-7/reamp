@@ -16,7 +16,7 @@ const OP_CHAT = {
   after: ['?', '소리 안 나옴', '내 폰만?', '??????', '방송사고?', '뭐야 얼었어', '음향 나감', '새로고침 해봄', 'ㅋㅋㅋㅋㅋ', '왜 가만히 있음', '??'],
 };
 const OP_POST = {
-  clip: ['@bluehour_live', '【방송사고】 SIGNAL LOST 무대 도중 47초 무음… 센터는 그대로 굳어버림'],
+  clip: ['@bluehour_live', '【방송사고】 SIGNAL LOST 47초 무음… 굳어 있던 센터, 결국 무대에서 쓰러져'],
   comments: [['@yuu_rockin', 'ㅋㅋㅋㅋ 아무것도 안 함'], ['@tanaka_m', '데뷔 앞둔 밴드 맞냐'], ['@riff_daily', '음향사고가 아니라 실력사고'], ['@minori_07', 'SIGNAL LOST 끝났네']],
   quotes: ['ㅋㅋㅋㅋ', '이거 봄?', '47초 버티기 챌린지', '↻↻↻'],
   remix: ['🔁 LOOP', '0.5x', '8BIT', 'slowed+reverb', '자막 ver.', '리액션', 'AI 커버', '47초 풀버전'],

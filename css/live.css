@@ -335,3 +335,8 @@
 .lv .cc-b b{color:var(--cob)}
 .lv .cc-k{margin-top:12px;font-family:var(--pixel);font-size:13px;letter-spacing:.12em;color:#56619A;text-align:right}
 .lv .cc-k span{display:inline-block;min-width:22px;padding:1px 6px;margin-left:10px;border:2px solid var(--abyss);color:var(--abyss);text-align:center}
+
+/* the collapse at the end of the 47 seconds */
+.lv.fall{animation:lvFall 2.4s cubic-bezier(.55,0,.85,.35) forwards;transform-origin:50% 90%}
+@keyframes lvFall{0%{transform:none;filter:none}18%{transform:rotate(-2deg) translateY(8px)}32%{transform:rotate(1.5deg) translateY(4px);filter:blur(1px) brightness(.9)}
+  100%{transform:rotate(-16deg) translateY(220px) scale(1.18);filter:blur(8px) brightness(0)}}
