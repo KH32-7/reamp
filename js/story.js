@@ -37,7 +37,7 @@ const STORY = {
     { live: { song: 'count4', scenario: 'tutorial', len: 'hl', bg: 'stage_fest', skipResult: true } },
     { card: ['SET 2 / 2', '두 번째 곡', '생중계 중'] },
     { live: { song: 'hanpaku', scenario: 'incident', bg: 'stage_fest', noFail: true } },
-    { card: ['그 후', '몽타주 자리', '클립 확산 · 청력 검사 · 조용해진 단톡방 · 하루 전속 계약 · 옷장 속 기타 케이스'], long: true },
+    { cut: 'after47' },                           // the phone · the hearing test · Haru's contract · the group chat · the closet
   ],
 };
 
@@ -55,6 +55,7 @@ const Story = {
     if (st.adv) go('adv', { via: 'fade', push: false, arg: { script: st.adv, bg: st.bg, place: st.place, date: st.date, next } });
     else if (st.card) go('card', { via: 'fade', push: false, arg: { lines: st.card, long: st.long, next } });
     else if (st.op) go('op0', { via: 'cut', push: false, arg: { next } });
+    else if (st.cut) go(st.cut, { via: 'fade', push: false, arg: { next } });
     else if (st.week) { W.init(); SAVE.progress = { story: this.id, step: this.i, done: true }; writeSave(); W.resume(); }
     else if (st.live) go('live', { via: 'slam', push: false, arg: { ...st.live, part: G.inst, diff: G.diff ?? 1, party: 'signal', story: this.id, next } });
   },
