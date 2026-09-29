@@ -26,13 +26,10 @@ function pickLength(song, cb) {
 const COACH_ON = QS.get('coach') !== '0';
 /* tutorial: what each part of the live screen is, one at a time, before the count-in */
 const COACH_PRE = part => [
-  { spot: 'hw', t: '노트', b: `노트가 위에서 내려와요. 판정선에 닿는 순간 같은 줄의 키를 누르세요. 키는 왼쪽부터 <b>${INST_INFO[part].keys}</b>예요.` },
-  { spot: 'line', t: '판정', b: '타이밍이 정확할수록 PERFECT, GREAT, GOOD 순으로 떠요. 놓치면 MISS가 뜨고 콤보가 끊겨요.' },
-  { spot: '.lv-score', t: 'SCORE · RANK', b: '점수와 랭크예요. 정확하게 칠수록 점수가 오르고, 곡이 끝나면 점수로 랭크가 정해져요.' },
-  { spot: '.lv-heat', t: 'CROWD HEAT', b: '관객 반응이에요. 잘 치면 오르고 놓치면 떨어져요. <b>80</b>을 넘으면 AMP 상태가 되고, <b>0</b>이 되면 공연이 멈춰요.', c: '#FF4FA0' },
-  { spot: '.lv-sync', t: 'BAND SYNC', b: '밴드와 얼마나 잘 맞는지 보여 줘요. 흔들리는 멤버를 받쳐 주거나 아이 콘택트에 성공하면 올라가요.' },
-  { spot: '.lv-party', t: '멤버', b: '같이 무대에 선 멤버들이에요. 누군가 흔들리면 여기 이름표가 먼저 깜빡여요.' },
-  { spot: '.lv-pz', t: '일시정지', b: '<b>ESC</b>나 <b>P</b>를 누르면 언제든 멈출 수 있어요. 준비됐으면 카운트를 시작할게요.' },
+  { spot: 'hw', t: '노트', b: `노트가 판정선에 닿는 순간 같은 줄의 키를 누르세요. 키는 왼쪽부터 <b>${INST_INFO[part].keys}</b>예요. 정확할수록 PERFECT, 놓치면 MISS예요.` },
+  { spot: '.lv-heat', t: 'CROWD HEAT', b: '관객 반응이에요. 잘 치면 오르고 놓치면 떨어져요. <b>0</b>이 되면 공연이 멈춰요. 점수와 랭크는 왼쪽 위에 있어요.', c: '#FF4FA0' },
+  { spot: '.lv-sync', t: 'BAND SYNC', b: '밴드와 얼마나 맞는지예요. 흔들리는 멤버를 받쳐 주면 올라가요. 멤버 이름표는 왼쪽에 있어요.' },
+  { spot: '.lv-pz', t: '일시정지', b: '<b>ESC</b>나 <b>P</b>로 언제든 멈출 수 있어요. 곡 중간에 딱 두 번만 더 멈춰서 설명할게요.' },
 ];
 
 /* scripted events per scenario (bars are song bars; real songs will use seconds, e.g. blackout at 151 = 2:31) */
@@ -265,18 +262,31 @@ scene('live', {
     return { x: (b.left - sr.left) * s - pad, y: (b.top - sr.top) * s - pad, w: b.width * s + pad * 2, h: b.height * s + pad * 2 };
   },
   /* mid-song explanations, each shown just before its thing first reaches you */
+  /* mid-song: two stops at most — one for the special notes, one for the band (COVER + eye contact) */
   coachEvents(L) {
-    const ev = (at, steps) => at > 1 && L.events.push({ type: 'coach', at, steps, done: false });
+    const ev = (at, steps) => { if (!(at > 1 && steps.length)) return null; const e = { type: 'coach', at, steps, done: false }; L.events.push(e); return e; };
     const lead = .9, notes = L.notes;                  // ~0.9 s out the note is fully drawn, about a third of the way down
     const at = n => () => this.R.rectOf(n, L.time);
-    const kick = notes.find(n => n.kind === 'kick'), hold = notes.find(n => n.len && n.kind !== 'extra' && n.end - n.t >= .6), gem = notes.find(n => n.kind === 'extra');
-    if (kick) ev(kick.t - lead, [{ spot: at(kick), t: '킥 노트', b: '가로로 긴 주황색 막대는 킥이에요. <b>SPACE</b>로 치세요.', c: '#FF7A3D' }]);
-    if (hold) ev(hold.t - lead, [{ spot: at(hold), t: '롱 노트', b: '꼬리가 달린 노트예요. 판정선에 닿으면 누르고, <b>꼬리가 끝날 때까지</b> 떼지 마세요. 중간에 떼면 MISS가 돼요.' }]);
-    if (gem) ev(gem.t - lead, [{ spot: at(gem), t: '보석 노트', b: '반짝이는 노트는 코러스나 퍼커션 소리예요. 어떤 악기를 골랐든 <b>같이 쳐야</b> 해요.', c: '#FF8FC8' }]);
-    const f = L.members.flatMap(m => m.fumbles.map(x => ({ m, x }))).sort((a, b) => a.x.t0 - b.x.t0)[0];
-    if (f) ev(f.x.t0 - 1.9, [{ spot: `.lv-prow[data-id="${f.m.id}"]`, t: 'COVER', b: `${f.m.name}의 연주가 흔들리고 있어요. 곧 <b>${f.m.name} 색으로 칠해진 노트</b>가 내 레인으로 내려와요. 그 노트를 치면 대신 받쳐 줄 수 있어요.`, c: f.m.c }]);
-    const w = L.eyes[0];
-    if (w) ev(w.t0 - L.beat * 3 - .3, [{ spot: 'hw', t: 'EYE CONTACT', b: `곧 ${w.en}와 눈이 맞는 구간이에요. <b>색칠된 한 마디</b>를 전부 GREAT 이상으로 치면 밴드 싱크가 크게 올라요.`, c: w.c }]);
+    const ok = n => n.t > 2.5;                         // a note right on the downbeat can't be stopped for
+    const kick = notes.find(n => ok(n) && n.kind === 'kick'), hold = notes.find(n => ok(n) && n.len && n.kind !== 'extra' && n.end - n.t >= .6), gem = notes.find(n => ok(n) && n.kind === 'extra');
+    // 1 · notes: stop at the first special note; the others are explained in the same stop
+    const sp = [kick, hold, gem].filter(Boolean).sort((a, b) => a.t - b.t), first = sp[0];
+    const text = {
+      kick: '가로로 긴 주황색 막대는 킥이에요. <b>SPACE</b>로 치세요.',
+      hold: '꼬리가 달린 노트는 판정선에서 누르고 <b>꼬리가 끝날 때까지</b> 떼지 마세요.',
+      gem: '반짝이는 보석 노트는 코러스나 퍼커션 소리예요. 어떤 악기든 <b>같이 쳐야</b> 해요.',
+    };
+    const kindOf = n => n === kick ? 'kick' : n === hold ? 'hold' : 'gem';
+    const stop1 = first && ev(first.t - lead, sp.map(n => ({ spot: n === first ? at(n) : 'hw', t: { kick: '킥 노트', hold: '롱 노트', gem: '보석 노트' }[kindOf(n)], b: text[kindOf(n)], c: { kick: '#FF7A3D', gem: '#FF8FC8' }[kindOf(n)] })));
+    // 2 · the band: COVER and eye contact in one stop, before whichever comes first
+    const f = L.members.flatMap(m => m.fumbles.map(x => ({ m, x }))).sort((a, b) => a.x.t0 - b.x.t0)[0], w = L.eyes[0];
+    const band = [];
+    if (f) band.push({ t0: f.x.t0 - 1.9, s: { spot: `.lv-prow[data-id="${f.m.id}"]`, t: 'COVER', b: `멤버가 흔들리면 이름표가 깜빡이고, 그 멤버 색으로 칠해진 노트가 내 레인으로 내려와요. 그 노트를 치면 <b>대신 받쳐 줄 수</b> 있어요.`, c: f.m.c } });
+    if (w) band.push({ t0: w.t0 - L.beat * 3 - .3, s: { spot: 'hw', t: 'EYE CONTACT', b: '멤버와 눈이 맞는 구간에서는 <b>색칠된 한 마디</b>를 전부 GREAT 이상으로 치세요. 밴드 싱크가 크게 올라요.', c: w.c } });
+    if (!band.length) return;
+    const t2 = Math.min(...band.map(b => b.t0));
+    if (stop1 && t2 < stop1.at + 4) stop1.steps.push(...band.map(b => b.s));   // too close to the first stop: say it there
+    else ev(t2, band.map(b => b.s));
   },
   coachMid(e) {
     const L = this.L;
